@@ -20,7 +20,15 @@
    - API de WhatsApp
    - Monitoreo y estadísticas
 
-3. **[LOGGING_AND_ERRORS.md](LOGGING_AND_ERRORS.md)** - Sistema de Logs y Manejo de Errores
+3. **[WHATSAPP_MESSAGE_TYPES.md](WHATSAPP_MESSAGE_TYPES.md)** - Tipos de Mensajes de WhatsApp
+   - Mensajes de texto y botones
+   - Listas interactivas
+   - Mensajes multimedia
+   - Ubicación y contactos
+   - Plantillas predefinidas
+   - Ejemplos de uso
+
+4. **[LOGGING_AND_ERRORS.md](LOGGING_AND_ERRORS.md)** - Sistema de Logs y Manejo de Errores
    - Configuración de logging
    - Formato de logs
    - Loggers especializados

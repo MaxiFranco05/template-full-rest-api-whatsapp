@@ -12,6 +12,7 @@ from app.core.error_handling import WhatsAppException, handle_errors
 from app.services.message_service import message_service
 from app.services.conversation_service import conversation_manager, ConversationState
 from app.services.whatsapp_persistence_service import get_whatsapp_persistence_service
+from app.services.whatsapp_message_types import create_message_sender, create_message_templates
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,8 @@ class WhatsAppService:
         self.phone_number_id = settings.WHATSAPP_PHONE_NUMBER_ID
         self.api_url = settings.WHATSAPP_API_URL
         self.verify_token = settings.WHATSAPP_WEBHOOK_VERIFY_TOKEN
+        self.message_sender = create_message_sender(self)
+        self.message_templates = create_message_templates()
     
     @handle_errors("WHATSAPP_SEND_ERROR")
     async def send_message(
@@ -32,17 +35,7 @@ class WhatsAppService:
         message: str, 
         message_type: str = "text"
     ) -> Dict[str, Any]:
-        """
-        Enviar mensaje a través de WhatsApp Business API
-        
-        Args:
-            to: Número de teléfono del destinatario
-            message: Contenido del mensaje
-            message_type: Tipo de mensaje (text, template, etc.)
-        
-        Returns:
-            Dict con respuesta de la API
-        """
+        """Send message through WhatsApp Business API"""
         try:
             url = f"{self.api_url}/{self.phone_number_id}/messages"
             
@@ -174,17 +167,7 @@ class WhatsAppService:
             }
     
     def verify_webhook(self, mode: str, token: str, challenge: str) -> Optional[str]:
-        """
-        Verificar webhook de WhatsApp
-        
-        Args:
-            mode: Modo de verificación
-            token: Token de verificación
-            challenge: Challenge string
-        
-        Returns:
-            Challenge string si es válido, None si no
-        """
+        """Verify webhook token"""
 
         if mode == "subscribe" and token == self.verify_token:
             logger.info("Webhook de WhatsApp verificado exitosamente")
@@ -206,15 +189,7 @@ class WhatsAppService:
             return None
     
     def parse_webhook_data(self, data: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """
-        Parsear datos del webhook de WhatsApp
-        
-        Args:
-            data: Datos del webhook
-        
-        Returns:
-            Lista de mensajes procesados
-        """
+        """Parse incoming webhook data"""
         # Log de desarrollo: mostrar JSON completo del webhook
         if settings.DEBUG:
             logger.info(f"[DESARROLLO] Webhook recibido completo: {json.dumps(data, indent=2, ensure_ascii=False)}")
@@ -253,7 +228,7 @@ class WhatsAppService:
         return messages
     
     def _parse_message(self, message: Dict[str, Any], value: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Parsear mensaje individual"""
+        """Parse individual message from webhook"""
         try:
             # Log de desarrollo: mostrar datos del mensaje individual
             if settings.DEBUG:
@@ -318,7 +293,7 @@ class WhatsAppService:
             return None
     
     def _parse_status(self, status: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Parsear estado de mensaje"""
+        """Parse message status from webhook"""
         try:
             message_id = status.get("id")
             status_type = status.get("status")
@@ -342,17 +317,57 @@ class WhatsAppService:
                 logger.error(f"[DESARROLLO] Error parseando estado - Tipo de excepción: {type(e).__name__}")
             return None
     
+    def _send_interactive_response(self, phone_number: str, conversation_state: str, 
+                                 contact_info: Dict[str, Any]) -> Dict[str, Any]:
+        """Send interactive response based on conversation state"""
+        try:
+            if conversation_state == "initial":
+                # Send welcome message with buttons
+                welcome_template = self.message_templates.welcome_message(settings.COMPANY_NAME)
+                result = self.message_sender.send_buttons(
+                    phone_number,
+                    welcome_template["body"],
+                    welcome_template["buttons"]
+                )
+                return result
+            
+            elif conversation_state == "waiting_for_selection":
+                # Send product/service menu with validation
+                catalog_template = self.message_templates.product_catalog_message()
+                
+                if catalog_template["type"] == "text":
+                    # No products available, send fallback message
+                    result = self.message_sender.send_text(phone_number, catalog_template["body"])
+                else:
+                    # Products available, send list
+                    result = self.message_sender.send_list(
+                        phone_number,
+                        catalog_template["body"],
+                        catalog_template["button_text"],
+                        catalog_template["sections"]
+                    )
+                return result
+            
+            elif conversation_state == "contact_requested":
+                # Send contact information with validation
+                contact_text = self.message_templates.contact_info_message()
+                result = self.message_sender.send_text(phone_number, contact_text)
+                return result
+            
+            else:
+                # Default text response
+                default_message = message_service.get_confirmation_message("received")
+                result = self.message_sender.send_text(phone_number, default_message)
+                return result
+                
+        except Exception as e:
+            logger.error(f"Error sending interactive response: {e}")
+            # Fallback to simple text
+            fallback_message = message_service.get_confirmation_message("received")
+            return self.message_sender.send_text(phone_number, fallback_message)
+    
     async def process_incoming_message(self, message_data: Dict[str, Any], db_session=None) -> Dict[str, Any]:
-        """
-        Procesar mensaje entrante y generar respuesta
-        
-        Args:
-            message_data: Datos del mensaje parseado
-            db_session: Sesión de base de datos (opcional)
-        
-        Returns:
-            Dict con resultado del procesamiento
-        """
+        """Process incoming WhatsApp message and generate response"""
         try:
             # Log de desarrollo: mostrar JSON completo del mensaje
             if settings.DEBUG:
