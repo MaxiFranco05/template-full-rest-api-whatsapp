@@ -16,14 +16,14 @@ class FeatureDetection:
         
         # Log del estado
         if self.redis_available:
-            logger.info("✅ Redis disponible - Cache habilitado")
+            logger.info("Redis disponible - Cache habilitado")
         else:
-            logger.info("⚠️ Redis no disponible - Cache deshabilitado")
+            logger.info("Redis no disponible - Cache deshabilitado")
             
         if self.celery_available:
-            logger.info("✅ Celery disponible - Tareas asíncronas habilitadas")
+            logger.info("Celery disponible - Tareas asíncronas habilitadas")
         else:
-            logger.info("⚠️ Celery no disponible - Tareas síncronas")
+            logger.info("Celery no disponible - Tareas síncronas")
     
     def _check_redis(self) -> bool:
         """Verificar si Redis está disponible"""

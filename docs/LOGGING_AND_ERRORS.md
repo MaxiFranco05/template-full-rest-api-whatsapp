@@ -113,11 +113,40 @@ api_logger.log_authentication(
 # En desarrollo
 DEBUG = True
 # Logs: DEBUG, INFO, WARNING, ERROR, CRITICAL
+# Incluye logs de desarrollo detallados para debugging
 
 # En producción
 DEBUG = False
 # Logs: INFO, WARNING, ERROR, CRITICAL
+# Solo logs esenciales para producción
 ```
+
+### Logs de Desarrollo
+
+Cuando `DEBUG=True`, el sistema incluye logs detallados para debugging:
+
+#### WhatsApp Service Debugging
+
+```json
+{
+  "timestamp": "2025-01-09T23:00:00Z",
+  "level": "INFO",
+  "logger": "app.services.whatsapp_service",
+  "message": "[DESARROLLO] Webhook recibido completo: {...}",
+  "module": "whatsapp_service",
+  "function": "parse_webhook_data"
+}
+```
+
+Los logs de desarrollo incluyen:
+
+- **Webhook completo**: Estructura exacta de datos recibidos de WhatsApp
+- **Mensaje individual**: Datos específicos de cada mensaje
+- **Mensaje parseado**: Estructura interna del mensaje procesado
+- **Estado de conversación**: Información detallada del estado actual
+- **Errores detallados**: Contexto completo cuando ocurren errores
+- **Payloads de envío**: Datos exactos enviados a WhatsApp API
+- **Verificación de webhook**: Detalles de tokens y challenges
 
 ### Rotación de Archivos
 
@@ -340,6 +369,9 @@ tail -f logs/errors.log
 
 # Ver logs de WhatsApp
 tail -f logs/whatsapp.log
+
+# Ver solo logs de desarrollo
+tail -f logs/app.log | grep "\[DESARROLLO\]"
 
 # Buscar errores específicos
 grep "ERROR" logs/app.log

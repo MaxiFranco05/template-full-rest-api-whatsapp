@@ -18,12 +18,13 @@
 Business API Template es una aplicación profesional construida con FastAPI que incluye:
 
 - **API RESTful** para gestión de productos/servicios y usuarios
-- **Sistema de WhatsApp Business** con webhook y máquina de estados
+- **Sistema de WhatsApp Business** con webhook y máquina de estados inteligente
 - **Base de datos multi-soporte** (SQLite, PostgreSQL, MySQL)
-- **Sistema de logs profesional** con formato JSON
+- **Sistema de logs profesional** con formato JSON y debugging avanzado
 - **Manejo de errores robusto** con respuestas estandarizadas
 - **Autenticación JWT** completa
 - **Documentación automática** con Swagger UI
+- **Logs de desarrollo** para debugging detallado
 
 ## 🛠️ Instalación y Configuración
 
@@ -443,6 +444,16 @@ Los logs se configuran automáticamente al iniciar la aplicación:
 - **Archivo**: `logs/app.log` (rotación automática)
 - **Errores**: `logs/errors.log`
 - **WhatsApp**: `logs/whatsapp.log`
+
+### Logs de Desarrollo
+
+Cuando `DEBUG=True`, el sistema incluye logs detallados para debugging:
+
+- **Webhook completo**: Estructura exacta de datos recibidos de WhatsApp
+- **Mensaje individual**: Datos específicos de cada mensaje
+- **Estado de conversación**: Información detallada del estado actual
+- **Errores detallados**: Contexto completo cuando ocurren errores
+- **Payloads de envío**: Datos exactos enviados a WhatsApp API
 
 ### Formato de Logs
 

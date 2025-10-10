@@ -44,10 +44,23 @@ sequenceDiagram
     participant U as Usuario
     participant W as WhatsApp
     participant API as Nuestra API
-    participant DB as Base de Datos
+    participant CM as Conversation Manager
+    participant MS as Message Service
 
     U->>W: Envía mensaje
     W->>API: Webhook POST
+    API->>API: Parsear webhook
+    API->>CM: Obtener/crear conversación
+    CM->>CM: Determinar estado
+    alt Usuario nuevo
+        CM->>MS: Generar mensaje bienvenida
+        MS->>API: Mensaje personalizado
+    else Usuario existente
+        CM->>MS: Generar confirmación
+        MS->>API: Mensaje de confirmación
+    end
+    API->>W: Enviar respuesta
+    W->>U: Entregar mensaje
     API->>DB: Guardar mensaje
     API->>API: Procesar con máquina de estados
     API->>W: Enviar respuesta
@@ -72,6 +85,103 @@ stateDiagram-v2
     active --> ended : end_conversation
     processing --> ended : end_conversation
 ```
+
+## 🤖 Sistema de Conversaciones
+
+### Gestión de Estados
+
+El sistema utiliza una máquina de estados para gestionar conversaciones de WhatsApp:
+
+#### Estados Disponibles
+
+- **`initial`**: Estado inicial cuando se crea una conversación
+- **`waiting_welcome`**: Esperando enviar mensaje de bienvenida
+- **`active`**: Conversación activa, esperando mensajes del usuario
+- **`processing`**: Procesando mensaje del usuario
+- **`waiting_response`**: Esperando respuesta específica del usuario
+- **`idle`**: Conversación inactiva por timeout
+- **`ended`**: Conversación terminada
+
+#### Transiciones Automáticas
+
+```python
+# Primer mensaje recibido
+conversation.receive_first_message(message_data)
+# initial → waiting_welcome
+
+# Mensaje de bienvenida enviado
+conversation.send_welcome()
+# waiting_welcome → active
+
+# Usuario envía mensaje
+conversation.receive_message(message_data)
+# active → processing
+
+# Respuesta enviada
+conversation.send_response()
+# processing → active
+```
+
+### Procesamiento Inteligente
+
+#### Usuarios Nuevos vs Existentes
+
+El sistema detecta automáticamente si es un usuario nuevo:
+
+```python
+# Determinar si es usuario nuevo
+is_new_user = conversation.message_count == 0
+
+if is_new_user:
+    # Enviar mensaje de bienvenida personalizado
+    welcome_message = message_service.get_welcome_message(
+        is_new_user=True,
+        user_name=contact_info.get("name", ""),
+        company_name=settings.COMPANY_NAME
+    )
+else:
+    # Enviar confirmación de mensaje recibido
+    confirmation_message = message_service.get_confirmation_message("received")
+```
+
+#### Contexto de Conversación
+
+Cada conversación mantiene contexto:
+
+```python
+# Datos del usuario
+conversation.user_data = {
+    "name": "Juan Pérez",
+    "wa_id": "5492617510062"
+}
+
+# Contexto personalizado
+conversation.context = {
+    "last_product_viewed": "cafe_americano",
+    "preferences": ["sin_azucar", "leche_almendra"]
+}
+```
+
+### Logs de Desarrollo
+
+Cuando `DEBUG=True`, el sistema registra información detallada:
+
+```json
+{
+  "level": "INFO",
+  "message": "[DESARROLLO] Estado de conversación - ID: 5492617510062",
+  "conversation_state": "active",
+  "message_count": 3,
+  "is_new_user": false
+}
+```
+
+Los logs incluyen:
+- Estado actual de la conversación
+- Contador de mensajes
+- Datos del usuario
+- Contexto de la conversación
+- Errores detallados con contexto completo
 
 ## 📝 Personalización de Mensajes
 
