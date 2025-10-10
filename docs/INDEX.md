@@ -1,10 +1,10 @@
-# Cafe API - Documentación Completa
+# Business API Template - Documentación Completa
 
 ## 📚 Índice de Documentación
 
 ### 📖 Documentación Principal
 
-1. **[README.md](README.md)** - Documentación completa del proyecto
+1. **[README.md](README.md)** - Documentación completa del template
    - Instalación y configuración
    - Estructura del proyecto
    - API endpoints
@@ -48,7 +48,7 @@
 ```bash
 # 1. Clonar repositorio
 git clone <repository-url>
-cd cafe-api
+cd business-api-template
 
 # 2. Crear entorno virtual
 python -m venv venv
@@ -84,7 +84,7 @@ python main.py
 
 ### ✅ API RESTful
 - Autenticación JWT completa
-- Gestión de usuarios y productos
+- Gestión de usuarios y productos/servicios
 - Paginación y filtros
 - Validación de datos con Pydantic
 - Documentación automática con Swagger
@@ -121,7 +121,7 @@ python main.py
 ```env
 # Base de datos
 DATABASE_TYPE=sqlite
-SQLITE_DATABASE_URL=sqlite:///./cafe_whatsapp.db
+SQLITE_DATABASE_URL=sqlite:///./business_api.db
 
 # WhatsApp Business API
 WHATSAPP_ACCESS_TOKEN=your-access-token
@@ -131,6 +131,11 @@ WHATSAPP_WEBHOOK_VERIFY_TOKEN=your-verify-token
 # Seguridad
 SECRET_KEY=your-secret-key
 DEBUG=True
+
+# Empresa (personalizable)
+COMPANY_NAME=Tu Empresa
+COMPANY_PHONE=+1234567890
+COMPANY_EMAIL=contacto@tuempresa.com
 ```
 
 ## 📊 Monitoreo
@@ -230,6 +235,10 @@ docker run -p 8000:8000 cafe-api
 - [ ] Respuestas automáticas con IA
 - [ ] Integración con CRM
 - [ ] Métricas avanzadas y analytics
+- [ ] Sistema de citas y reservas
+- [ ] Integración con sistemas de pago
+- [ ] Notificaciones push
+- [ ] API de terceros
 
 ### Versiones
 
@@ -240,6 +249,6 @@ docker run -p 8000:8000 cafe-api
 
 ---
 
-**Cafe API v1.0.0** - Sistema profesional de gestión con WhatsApp Business API
+**Business API Template v1.0.0** - Template profesional para APIs de negocio con WhatsApp Business API
 
 Para más información, consulta la documentación específica en cada archivo.

@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     """Configuración principal de la aplicación"""
     
     # Información básica de la aplicación
-    APP_NAME: str = "Cafe API"
+    APP_NAME: str = "Business API Template"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
     
@@ -19,8 +19,8 @@ class Settings(BaseSettings):
     PORT: int = 8000
     
     # Base de datos
-    DATABASE_URL: str = "postgresql://user:password@localhost:5432/cafe_db"
-    DATABASE_URL_TEST: str = "postgresql://user:password@localhost:5432/cafe_test_db"
+    DATABASE_URL: str = "postgresql://user:password@localhost:5432/business_db"
+    DATABASE_URL_TEST: str = "postgresql://user:password@localhost:5432/business_test_db"
     
     # Seguridad
     SECRET_KEY: str = "your-secret-key-change-in-production"
@@ -60,7 +60,15 @@ class Settings(BaseSettings):
     
     # Base de datos (SQLite por defecto, pero configurable)
     DATABASE_TYPE: str = "sqlite"  # sqlite, postgresql, mysql
-    SQLITE_DATABASE_URL: str = "sqlite:///./cafe_whatsapp.db"
+    SQLITE_DATABASE_URL: str = "sqlite:///./business_api.db"
+    
+    # Información de la empresa (personalizable)
+    COMPANY_NAME: str = "Tu Empresa"
+    COMPANY_PHONE: str = "+1234567890"
+    COMPANY_EMAIL: str = "contacto@tuempresa.com"
+    COMPANY_ADDRESS: str = "123 Main Street, City, State"
+    COMPANY_WEBSITE: str = "www.tuempresa.com"
+    COMPANY_DESCRIPTION: str = "Descripción de tu empresa"
     
     class Config:
         env_file = ".env"

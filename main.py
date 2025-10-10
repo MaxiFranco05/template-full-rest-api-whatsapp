@@ -34,7 +34,7 @@ except Exception as e:
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    description="API profesional para gestión de café",
+    description="Template profesional para APIs de negocio con WhatsApp Business API",
     openapi_url="/api/v1/openapi.json",
     docs_url="/docs",
     redoc_url="/redoc"
@@ -62,29 +62,40 @@ app.include_router(api_router, prefix="/api/v1")
 @app.get("/", response_class=HTMLResponse)
 async def root():
     """Página de inicio"""
-    return """
+    return f"""
     <html>
         <head>
-            <title>Cafe API</title>
+            <title>{settings.APP_NAME}</title>
             <style>
-                body { font-family: Arial, sans-serif; margin: 40px; }
-                .container { max-width: 800px; margin: 0 auto; }
-                h1 { color: #333; }
-                .links { margin-top: 30px; }
-                .links a { display: inline-block; margin: 10px; padding: 10px 20px; 
+                body {{ font-family: Arial, sans-serif; margin: 40px; }}
+                .container {{ max-width: 800px; margin: 0 auto; }}
+                h1 {{ color: #333; }}
+                .links {{ margin-top: 30px; }}
+                .links a {{ display: inline-block; margin: 10px; padding: 10px 20px; 
                            background: #007bff; color: white; text-decoration: none; 
-                           border-radius: 5px; }
-                .links a:hover { background: #0056b3; }
+                           border-radius: 5px; }}
+                .links a:hover {{ background: #0056b3; }}
+                .company-info {{ background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0; }}
             </style>
         </head>
         <body>
             <div class="container">
-                <h1>☕ Cafe API</h1>
-                <p>API profesional para gestión de café construida con FastAPI</p>
+                <h1>🚀 {settings.APP_NAME}</h1>
+                <p>Template profesional para APIs de negocio con WhatsApp Business API</p>
+                
+                <div class="company-info">
+                    <h3>📋 Información de la Empresa</h3>
+                    <p><strong>Nombre:</strong> {settings.COMPANY_NAME}</p>
+                    <p><strong>Teléfono:</strong> {settings.COMPANY_PHONE}</p>
+                    <p><strong>Email:</strong> {settings.COMPANY_EMAIL}</p>
+                    <p><strong>Sitio Web:</strong> {settings.COMPANY_WEBSITE}</p>
+                </div>
+                
                 <div class="links">
                     <a href="/docs">📚 Documentación Swagger</a>
                     <a href="/redoc">📖 Documentación ReDoc</a>
                     <a href="/api/v1/openapi.json">🔧 OpenAPI Schema</a>
+                    <a href="/health">❤️ Health Check</a>
                 </div>
             </div>
         </body>

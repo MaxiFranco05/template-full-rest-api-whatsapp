@@ -1,4 +1,4 @@
-# Cafe API - Documentación Completa
+# Business API Template - Documentación Completa
 
 ## 📋 Tabla de Contenidos
 
@@ -15,9 +15,9 @@
 
 ## 🚀 Introducción
 
-Cafe API es una aplicación profesional construida con FastAPI que incluye:
+Business API Template es una aplicación profesional construida con FastAPI que incluye:
 
-- **API RESTful** para gestión de productos y usuarios
+- **API RESTful** para gestión de productos/servicios y usuarios
 - **Sistema de WhatsApp Business** con webhook y máquina de estados
 - **Base de datos multi-soporte** (SQLite, PostgreSQL, MySQL)
 - **Sistema de logs profesional** con formato JSON
@@ -38,7 +38,7 @@ Cafe API es una aplicación profesional construida con FastAPI que incluye:
 1. **Clonar el repositorio**
 ```bash
 git clone <repository-url>
-cd cafe-api
+cd business-api-template
 ```
 
 2. **Crear entorno virtual**
@@ -84,11 +84,11 @@ La aplicación estará disponible en:
 ## 📁 Estructura del Proyecto
 
 ```
-cafe-api/
+business-api-template/
 ├── app/
 │   ├── api/v1/endpoints/        # Endpoints de la API
 │   │   ├── auth.py             # Autenticación
-│   │   ├── products.py         # Gestión de productos
+│   │   ├── products.py         # Gestión de productos/servicios
 │   │   └── whatsapp.py         # Webhook de WhatsApp
 │   ├── core/
 │   │   ├── config.py           # Configuración
@@ -106,9 +106,13 @@ cafe-api/
 │   │   ├── conversation_service.py # Máquina de estados
 │   │   ├── whatsapp_service.py # Integración WhatsApp
 │   │   ├── user_service.py     # Gestión de usuarios
-│   │   └── product_service.py  # Gestión de productos
+│   │   └── product_service.py  # Gestión de productos/servicios
 │   ├── data/
 │   │   └── messages.yaml       # Mensajes con tags
+│   ├── utils/
+│   │   ├── helpers.py          # Utilidades generales
+│   │   ├── feature_detection.py # Detección de características
+│   │   └── simple_cache.py     # Cache simple
 │   ├── static/                 # Archivos estáticos
 │   └── templates/              # Templates HTML
 ├── alembic/                    # Migraciones de BD
@@ -116,6 +120,7 @@ cafe-api/
 ├── docs/                       # Documentación
 ├── main.py                     # Aplicación principal
 ├── requirements.txt            # Dependencias
+├── pyproject.toml              # Configuración del proyecto
 └── env.example                 # Variables de entorno
 ```
 
@@ -174,10 +179,10 @@ Obtener información del usuario actual
 Authorization: Bearer <token>
 ```
 
-### Productos
+### Productos/Servicios
 
 #### `GET /api/v1/products/`
-Listar productos con paginación
+Listar productos/servicios con paginación
 
 **Query Parameters:**
 - `page`: Número de página (default: 1)
@@ -191,8 +196,8 @@ Listar productos con paginación
   "items": [
     {
       "id": 1,
-      "name": "Café Espresso",
-      "description": "Café espresso italiano",
+      "name": "Producto/Servicio",
+      "description": "Descripción del producto/servicio",
       "price": 250,
       "category_id": 1,
       "stock_quantity": 100,
@@ -208,13 +213,13 @@ Listar productos con paginación
 ```
 
 #### `POST /api/v1/products/`
-Crear nuevo producto (requiere autenticación)
+Crear nuevo producto/servicio (requiere autenticación)
 
 **Request Body:**
 ```json
 {
-  "name": "Nuevo Producto",
-  "description": "Descripción del producto",
+  "name": "Nuevo Producto/Servicio",
+  "description": "Descripción del producto/servicio",
   "price": 500,
   "category_id": 1,
   "stock_quantity": 50,
@@ -338,10 +343,25 @@ messages:
   welcome:
     new_user: |
       ¡Hola! 👋 
-      Bienvenido/a a nuestro servicio...
+      
+      Bienvenido/a a nuestro servicio de atención al cliente. 
+      
+      Soy tu asistente virtual y estoy aquí para ayudarte con cualquier consulta que tengas sobre nuestros productos y servicios.
+      
+      ¿En qué puedo ayudarte hoy? 😊
+    
     returning_user: |
       ¡Hola de nuevo! 👋
-      Me alegra verte otra vez...
+      
+      Me alegra verte otra vez. 
+      
+      ¿Hay algo en lo que pueda ayudarte hoy? Estoy aquí para resolver cualquier duda que tengas.
+  
+  error:
+    general: |
+      Lo siento, ha ocurrido un error técnico. 😔
+      
+      Por favor, intenta de nuevo en unos minutos o contacta con nuestro equipo de soporte.
 ```
 
 ## 🗄️ Base de Datos
@@ -554,8 +574,11 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 ```env
 # Base de datos
-DATABASE_TYPE=postgresql
-DATABASE_URL=postgresql://user:password@localhost:5432/cafe_db
+DATABASE_TYPE=sqlite
+SQLITE_DATABASE_URL=sqlite:///./business_api.db
+# Para producción usar PostgreSQL:
+# DATABASE_TYPE=postgresql
+# DATABASE_URL=postgresql://user:password@localhost:5432/business_db
 
 # Seguridad
 SECRET_KEY=your-super-secret-key-here
@@ -565,6 +588,11 @@ DEBUG=False
 WHATSAPP_ACCESS_TOKEN=your-production-token
 WHATSAPP_PHONE_NUMBER_ID=your-production-phone-id
 WHATSAPP_WEBHOOK_VERIFY_TOKEN=your-production-verify-token
+
+# Empresa (personalizable)
+COMPANY_NAME=Tu Empresa
+COMPANY_PHONE=+1234567890
+COMPANY_EMAIL=contacto@tuempresa.com
 ```
 
 ## 🔧 Troubleshooting
@@ -630,4 +658,4 @@ Para soporte técnico o preguntas:
 
 ---
 
-**Cafe API v1.0.0** - Sistema profesional de gestión con WhatsApp Business API
+**Business API Template v1.0.0** - Template profesional para APIs de negocio con WhatsApp Business API

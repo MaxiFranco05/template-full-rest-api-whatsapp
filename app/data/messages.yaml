@@ -33,6 +33,7 @@ messages:
       
       Por favor, intenta escribir tu consulta de manera más clara o utiliza palabras clave como:
       • "productos"
+      • "servicios"
       • "precios" 
       • "horarios"
       • "contacto"
@@ -51,11 +52,11 @@ messages:
     contact: |
       📞 **Información de contacto:**
       
-      • Teléfono: +1 (555) 123-4567
-      • Email: info@cafeapi.com
-      • Dirección: 123 Main Street, City, State
+      • Teléfono: {company_phone}
+      • Email: {company_email}
+      • Dirección: {company_address}
       
-      También puedes visitar nuestro sitio web: www.cafeapi.com
+      También puedes visitar nuestro sitio web: {company_website}
   
   # Estados de conversación
   states:
@@ -99,10 +100,11 @@ messages:
 config:
   # Variables que se pueden usar en los mensajes
   variables:
-    company_name: "Cafe API"
-    support_email: "soporte@cafeapi.com"
-    phone_number: "+1 (555) 123-4567"
-    website: "www.cafeapi.com"
+    company_name: "{company_name}"
+    company_email: "{company_email}"
+    company_phone: "{company_phone}"
+    company_address: "{company_address}"
+    company_website: "{company_website}"
   
   # Configuración de respuestas automáticas
   auto_responses:
