@@ -1,35 +1,37 @@
-# WhatsApp Business API Template
+# Business API Template
 
-Template profesional para proyectos con integración de WhatsApp Business API construido con FastAPI.
+Template profesional para APIs de negocio construido con FastAPI. Incluye sistema completo de WhatsApp Business API para cualquier tipo de empresa.
 
 ## 🚀 Características
 
 - **FastAPI**: Framework moderno y rápido para APIs
 - **WhatsApp Business API**: Integración completa con webhook y máquina de estados
 - **SQLAlchemy**: ORM para manejo de base de datos
-- **Multi-DB Support**: SQLite, PostgreSQL, MySQL
+- **Multi-DB**: Soporte para SQLite, PostgreSQL y MySQL
 - **JWT**: Autenticación con tokens
 - **Pydantic**: Validación de datos
 - **Alembic**: Migraciones de base de datos
-- **Logging**: Sistema de logs profesional con formato JSON
-- **Error Handling**: Manejo robusto de errores
+- **Logging Profesional**: Sistema de logs JSON estructurado
 - **Testing**: Suite de pruebas con pytest
 - **Documentación**: Swagger UI automática
 
 ## 📁 Estructura del Proyecto
 
 ```
-whatsapp-api-template/
+business-api-template/
 ├── app/
-│   ├── api/v1/endpoints/        # Endpoints de la API
-│   │   ├── auth.py             # Autenticación
-│   │   ├── products.py         # Gestión de productos
-│   │   └── whatsapp.py         # Webhook de WhatsApp
+│   ├── api/
+│   │   └── v1/
+│   │       ├── api.py
+│   │       └── endpoints/
+│   │           ├── auth.py
+│   │           ├── products.py
+│   │           └── whatsapp.py
 │   ├── core/
-│   │   ├── config.py           # Configuración
-│   │   ├── security.py         # JWT y seguridad
-│   │   ├── logging_config.py   # Sistema de logs
-│   │   └── error_handling.py   # Manejo de errores
+│   │   ├── config.py
+│   │   ├── security.py
+│   │   ├── logging_config.py
+│   │   └── error_handling.py
 │   ├── db/
 │   │   └── database.py         # Configuración de BD
 │   ├── models/
@@ -37,20 +39,30 @@ whatsapp-api-template/
 │   ├── schemas/
 │   │   └── __init__.py         # Esquemas Pydantic
 │   ├── services/
-│   │   ├── message_service.py  # Gestión de mensajes
-│   │   ├── conversation_service.py # Máquina de estados
-│   │   ├── whatsapp_service.py # Integración WhatsApp
-│   │   ├── user_service.py     # Gestión de usuarios
-│   │   └── product_service.py  # Gestión de productos
+│   │   ├── user_service.py
+│   │   ├── product_service.py
+│   │   ├── whatsapp_service.py
+│   │   ├── conversation_service.py
+│   │   ├── message_service.py
+│   │   ├── data_config_service.py
+│   │   ├── message_validation_service.py
+│   │   ├── whatsapp_message_types.py
+│   │   └── whatsapp_persistence_service.py
 │   ├── data/
-│   │   └── messages.yaml       # Mensajes con tags
-│   └── utils/
-│       └── helpers.py
-├── alembic/                    # Migraciones de BD
-├── docs/                       # Documentación
-├── main.py                     # Aplicación principal
-├── requirements.txt            # Dependencias
-└── env.example                 # Variables de entorno
+│   │   └── messages.yaml
+│   ├── utils/
+│   │   ├── helpers.py
+│   │   ├── feature_detection.py
+│   │   └── simple_cache.py
+│   ├── static/
+│   └── templates/
+├── alembic/
+├── docs/
+├── logs/
+├── main.py
+├── requirements.txt
+├── pyproject.toml
+└── README.md
 ```
 
 ## 🛠️ Instalación
@@ -58,7 +70,7 @@ whatsapp-api-template/
 1. **Clonar el repositorio**
 ```bash
 git clone <repository-url>
-cd whatsapp-api-template
+cd business-api-template
 ```
 
 2. **Crear entorno virtual**
@@ -88,6 +100,13 @@ cp env.example .env
 
 6. **Ejecutar migraciones**
 ```bash
+# Para SQLite (desarrollo - automático)
+# La base de datos se crea automáticamente
+
+# Para PostgreSQL (producción)
+createdb business_db
+
+# Ejecutar migraciones
 alembic upgrade head
 ```
 
@@ -105,12 +124,10 @@ Crea un archivo `.env` con las siguientes variables:
 ```env
 # Base de datos
 DATABASE_TYPE=sqlite
-SQLITE_DATABASE_URL=sqlite:///./whatsapp_template.db
-
-# WhatsApp Business API
-WHATSAPP_ACCESS_TOKEN=your-access-token
-WHATSAPP_PHONE_NUMBER_ID=your-phone-number-id
-WHATSAPP_WEBHOOK_VERIFY_TOKEN=your-verify-token
+SQLITE_DATABASE_URL=sqlite:///./business_api.db
+# Para producción usar PostgreSQL:
+# DATABASE_TYPE=postgresql
+# DATABASE_URL=postgresql://user:password@localhost:5432/business_db
 
 # Seguridad
 SECRET_KEY=your-secret-key-change-in-production
@@ -121,8 +138,23 @@ HOST=0.0.0.0
 PORT=8000
 DEBUG=True
 
+# WhatsApp Business API
+WHATSAPP_ACCESS_TOKEN=your-access-token
+WHATSAPP_PHONE_NUMBER_ID=your-phone-number-id
+WHATSAPP_WEBHOOK_VERIFY_TOKEN=your-verify-token
+
+# Información de la empresa
+COMPANY_NAME=Tu Empresa
+COMPANY_PHONE=+1234567890
+COMPANY_EMAIL=contacto@tuempresa.com
+COMPANY_ADDRESS=Tu Dirección
+COMPANY_WEBSITE=https://tuempresa.com
+COMPANY_DESCRIPTION=Descripción de tu empresa
+
 # Redis (opcional)
 REDIS_URL=redis://localhost:6379
+CELERY_BROKER_URL=redis://localhost:6379/0
+CELERY_RESULT_BACKEND=redis://localhost:6379/0
 ```
 
 ## 📱 Sistema de WhatsApp
@@ -141,6 +173,17 @@ REDIS_URL=redis://localhost:6379
 
 - `initial` → `waiting_welcome` → `active` → `processing` → `idle` → `ended`
 
+### Tipos de Mensajes Soportados
+
+- **Texto**: Mensajes simples
+- **Botones**: Botones interactivos
+- **Listas**: Menús desplegables
+- **Media**: Imágenes, videos, documentos
+- **Ubicación**: Compartir ubicación
+- **Contactos**: Información de contacto
+- **Stickers**: Stickers de WhatsApp
+- **Plantillas**: Mensajes preaprobados
+
 ## 📚 API Endpoints
 
 ### Autenticación
@@ -148,14 +191,14 @@ REDIS_URL=redis://localhost:6379
 - `POST /api/v1/auth/login` - Iniciar sesión
 - `GET /api/v1/auth/me` - Obtener usuario actual
 
-### Productos
-- `GET /api/v1/products/` - Listar productos
-- `GET /api/v1/products/{id}` - Obtener producto
-- `POST /api/v1/products/` - Crear producto
-- `PUT /api/v1/products/{id}` - Actualizar producto
-- `DELETE /api/v1/products/{id}` - Eliminar producto
+### Productos/Servicios
+- `GET /api/v1/products/` - Listar productos/servicios
+- `GET /api/v1/products/{id}` - Obtener producto/servicio
+- `POST /api/v1/products/` - Crear producto/servicio
+- `PUT /api/v1/products/{id}` - Actualizar producto/servicio
+- `DELETE /api/v1/products/{id}` - Eliminar producto/servicio
 
-### WhatsApp
+### WhatsApp Business
 - `GET /api/v1/whatsapp/webhook` - Verificar webhook
 - `POST /api/v1/whatsapp/webhook` - Recibir mensajes
 - `GET /api/v1/whatsapp/conversations` - Estadísticas de conversaciones
@@ -187,10 +230,10 @@ Una vez que la aplicación esté ejecutándose, puedes acceder a:
 
 ```bash
 # Construir imagen
-docker build -t whatsapp-api-template .
+docker build -t business-api .
 
 # Ejecutar contenedor
-docker run -p 8000:8000 whatsapp-api-template
+docker run -p 8000:8000 business-api
 ```
 
 ### Producción
@@ -201,6 +244,52 @@ pip install gunicorn
 
 # Ejecutar con gunicorn
 gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker
+```
+
+## 🎯 Casos de Uso
+
+Este template es perfecto para:
+
+- **Restaurantes**: Gestión de menús y pedidos por WhatsApp
+- **Tiendas Online**: Catálogo de productos y atención al cliente
+- **Servicios Profesionales**: Consultorías, clínicas, estudios
+- **E-commerce**: Ventas y soporte al cliente
+- **Startups**: MVP rápido con WhatsApp Business
+- **Empresas**: Sistema interno de gestión y comunicación
+
+## 🔧 Personalización
+
+### 1. Cambiar el Modelo de Productos
+Edita `app/models/__init__.py` para adaptar los campos a tu negocio:
+```python
+class Product(BaseModel):
+    name: str
+    description: Optional[str]
+    price: Decimal
+    category_id: Optional[int]
+    # Agregar campos específicos de tu negocio
+    sku: Optional[str]  # Para inventario
+    service_duration: Optional[int]  # Para servicios
+    availability: Optional[str]  # Para citas
+```
+
+### 2. Personalizar Mensajes de WhatsApp
+Edita `app/data/messages.yaml`:
+```yaml
+messages:
+  welcome:
+    new_user: |
+      ¡Hola! 👋 
+      Bienvenido/a a [TU EMPRESA]
+      ¿En qué puedo ayudarte hoy?
+```
+
+### 3. Configurar Variables de Entorno
+Personaliza `.env` con tu información:
+```env
+COMPANY_NAME=Tu Empresa
+COMPANY_PHONE=+1234567890
+COMPANY_EMAIL=contacto@tuempresa.com
 ```
 
 ## 🤝 Contribución
@@ -217,10 +306,11 @@ Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más det
 
 ## 👥 Autores
 
-- **Tu Nombre** - *Trabajo inicial* - [tu-usuario](https://github.com/gastonfr24)
+- **Template Creator** - *Template inicial* - [tu-usuario](https://github.com/tu-usuario)
 
 ## 🙏 Agradecimientos
 
 - FastAPI por el excelente framework
-- WhatsApp Business API por la plataforma de mensajería
 - SQLAlchemy por el ORM robusto
+- WhatsApp Business API por la integración
+- Comunidad de desarrolladores por las mejores prácticas
