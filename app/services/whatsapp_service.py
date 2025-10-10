@@ -11,6 +11,7 @@ from app.core.logging_config import whatsapp_logger
 from app.core.error_handling import WhatsAppException, handle_errors
 from app.services.message_service import message_service
 from app.services.conversation_service import conversation_manager, ConversationState
+from app.services.whatsapp_persistence_service import get_whatsapp_persistence_service
 
 logger = logging.getLogger(__name__)
 
@@ -341,12 +342,13 @@ class WhatsAppService:
                 logger.error(f"[DESARROLLO] Error parseando estado - Tipo de excepción: {type(e).__name__}")
             return None
     
-    async def process_incoming_message(self, message_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def process_incoming_message(self, message_data: Dict[str, Any], db_session=None) -> Dict[str, Any]:
         """
         Procesar mensaje entrante y generar respuesta
         
         Args:
             message_data: Datos del mensaje parseado
+            db_session: Sesión de base de datos (opcional)
         
         Returns:
             Dict con resultado del procesamiento
@@ -360,8 +362,21 @@ class WhatsAppService:
             content = message_data.get("content", "").lower().strip()
             contact_info = message_data.get("contact_info", {})
             
-            # Obtener o crear conversación
+            # Obtener servicio de persistencia
+            persistence_service = get_whatsapp_persistence_service(db_session)
+            
+            # Obtener o crear usuario en base de datos
+            user = persistence_service.get_or_create_user(from_number, contact_info)
+            
+            # Obtener o crear conversación en memoria (para máquina de estados)
             conversation = conversation_manager.get_or_create_conversation(from_number)
+            
+            # Obtener o crear conversación en base de datos
+            db_conversation = persistence_service.get_or_create_conversation(
+                user_id=user.id,
+                conversation_id=conversation.conversation_id,
+                initial_state=conversation.state
+            )
             
             # Log de desarrollo: mostrar estado de la conversación
             if settings.DEBUG:
@@ -373,6 +388,23 @@ class WhatsAppService:
             
             # Determinar si es usuario nuevo
             is_new_user = conversation.message_count == 0
+            
+            # Guardar mensaje entrante en base de datos
+            inbound_message_data = {
+                'message_id': message_data.get('message_id'),
+                'direction': 'inbound',
+                'message_type': message_data.get('message_type', 'text'),
+                'content': message_data.get('content'),
+                'media_url': message_data.get('media_url'),
+                'timestamp': message_data.get('timestamp'),
+                'status': 'received',
+                'metadata': {
+                    'contact_info': contact_info,
+                    'raw_message': message_data
+                }
+            }
+            
+            saved_message = persistence_service.save_message(db_conversation.id, inbound_message_data)
             
             # Procesar según el estado actual
             if conversation.state == "initial":
@@ -403,12 +435,38 @@ class WhatsAppService:
                 send_result = await self.send_message(from_number, welcome_message)
                 
                 if send_result["success"]:
+                    # Guardar mensaje saliente en base de datos
+                    outbound_message_data = {
+                        'message_id': send_result.get('message_id'),
+                        'direction': 'outbound',
+                        'message_type': 'text',
+                        'content': welcome_message,
+                        'timestamp': datetime.utcnow(),
+                        'status': 'sent',
+                        'metadata': {
+                            'message_type': 'welcome',
+                            'is_new_user': is_new_user,
+                            'user_name': contact_info.get('name', '')
+                        }
+                    }
+                    
+                    persistence_service.save_message(db_conversation.id, outbound_message_data)
+                    
+                    # Actualizar estado en memoria y base de datos
                     conversation.send_welcome()
+                    persistence_service.update_conversation_state(
+                        conversation.conversation_id, 
+                        conversation.state,
+                        {'welcome_sent': True, 'is_new_user': is_new_user}
+                    )
+                    
                     return {
                         "success": True,
                         "response_sent": True,
                         "message": welcome_message,
-                        "conversation_state": conversation.state
+                        "conversation_state": conversation.state,
+                        "user_id": user.id,
+                        "conversation_id": db_conversation.id
                     }
                 else:
                     return {
@@ -440,12 +498,37 @@ class WhatsAppService:
                 send_result = await self.send_message(from_number, confirmation_message)
                 
                 if send_result["success"]:
+                    # Guardar mensaje saliente en base de datos
+                    outbound_message_data = {
+                        'message_id': send_result.get('message_id'),
+                        'direction': 'outbound',
+                        'message_type': 'text',
+                        'content': confirmation_message,
+                        'timestamp': datetime.utcnow(),
+                        'status': 'sent',
+                        'metadata': {
+                            'message_type': 'confirmation',
+                            'user_state': conversation.state
+                        }
+                    }
+                    
+                    persistence_service.save_message(db_conversation.id, outbound_message_data)
+                    
+                    # Actualizar estado en memoria y base de datos
                     conversation.send_response()
+                    persistence_service.update_conversation_state(
+                        conversation.conversation_id, 
+                        conversation.state,
+                        {'last_response': confirmation_message}
+                    )
+                    
                     return {
                         "success": True,
                         "response_sent": True,
                         "message": confirmation_message,
-                        "conversation_state": conversation.state
+                        "conversation_state": conversation.state,
+                        "user_id": user.id,
+                        "conversation_id": db_conversation.id
                     }
                 else:
                     return {

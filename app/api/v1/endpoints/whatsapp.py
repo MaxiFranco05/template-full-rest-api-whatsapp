@@ -74,12 +74,9 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
         # Procesar cada mensaje
         for message_data in messages:
             if message_data.get("type") == "message":
-                # Procesar mensaje entrante
-                result = await whatsapp_service.process_incoming_message(message_data)
+                # Procesar mensaje entrante con persistencia
+                result = await whatsapp_service.process_incoming_message(message_data, db)
                 results.append(result)
-                
-                # TODO: Guardar en base de datos
-                # await save_message_to_db(db, message_data, result)
                 
             elif message_data.get("type") == "status":
                 # Procesar cambio de estado

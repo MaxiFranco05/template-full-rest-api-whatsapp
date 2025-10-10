@@ -19,8 +19,8 @@ class Settings(BaseSettings):
     PORT: int = 8000
     
     # Base de datos
-    DATABASE_URL: str = "postgresql://user:password@localhost:5432/business_db"
-    DATABASE_URL_TEST: str = "postgresql://user:password@localhost:5432/business_test_db"
+    DATABASE_URL: str = "sqlite:///./business_api.db"
+    DATABASE_URL_TEST: str = "sqlite:///./business_api_test.db"
     
     # Seguridad
     SECRET_KEY: str = "your-secret-key-change-in-production"
