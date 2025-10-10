@@ -1,0 +1,133 @@
+id: order
+name: Order Flow
+description: Complete order process with product selection and customer information
+start_step: greeting
+
+variables:
+  order_id: "ORD-{timestamp}"
+  company_name: "Mi Empresa"
+  delivery_fee: 5.00
+  tax_rate: 0.10
+
+error_handling:
+  validation_failed: show_validation_error
+  timeout: show_timeout
+  invalid_choice: show_invalid_choice
+
+steps:
+  - id: greeting
+    type: message
+    name: Greeting
+    message: "¡Perfecto! Te ayudo con tu pedido. 🛍️"
+    next_step: product_selection
+
+  - id: product_selection
+    type: choice
+    name: Product Selection
+    message: "Selecciona el producto que deseas:"
+    choice_type: list
+    button_text: "Ver Productos"
+    options:
+      - id: product_1
+        title: "Café Premium"
+        description: "$15.99 - Tostado artesanalmente"
+      - id: product_2
+        title: "Café Orgánico"
+        description: "$18.99 - Sin pesticidas"
+      - id: product_3
+        title: "Café Especial"
+        description: "$22.99 - Origen único"
+    next_step: collect_quantity
+
+  - id: collect_quantity
+    type: question
+    name: Collect Quantity
+    question: "¿Cuántas unidades deseas?"
+    validation:
+      required: true
+      min_value: 1
+      max_value: 10
+      error_message: "Por favor, ingresa una cantidad entre 1 y 10."
+    next_step: collect_customer_info
+
+  - id: collect_customer_info
+    type: question
+    name: Collect Customer Info
+    question: "Por favor, proporciona la siguiente información:\n\n• Nombre completo\n• Dirección de entrega\n• Teléfono de contacto\n• Email (opcional)\n\nResponde con 'listo' cuando hayas enviado toda la información."
+    validation:
+      required: true
+      min_length: 20
+      error_message: "Por favor, proporciona información completa."
+    next_step: confirm_order
+
+  - id: confirm_order
+    type: message
+    name: Confirm Order
+    message: "📋 Resumen del pedido:\n\n🛍️ Producto: {{selected_product}}\n📦 Cantidad: {{quantity}}\n👤 Cliente: {{customer_name}}\n📍 Dirección: {{address}}\n📱 Teléfono: {{phone}}\n📧 Email: {{email}}\n💰 Subtotal: ${{subtotal}}\n🚚 Delivery: ${{delivery_fee}}\n💳 Total: ${{total}}\n\n¿Confirmas este pedido?"
+    next_step: process_confirmation
+
+  - id: process_confirmation
+    type: condition
+    name: Process Confirmation
+    conditions:
+      - condition: "confirmation == 'sí'"
+        next_step: payment_info
+      - condition: "confirmation == 'si'"
+        next_step: payment_info
+      - condition: "confirmation == 'yes'"
+        next_step: payment_info
+      - condition: "confirmation == 'no'"
+        next_step: cancel_order
+      - condition: "confirmation == 'cancelar'"
+        next_step: cancel_order
+
+  - id: payment_info
+    type: question
+    name: Payment Information
+    question: "💳 Información de pago:\n\n• Método de pago (efectivo/tarjeta/transferencia)\n• Si es tarjeta: últimos 4 dígitos\n• Si es transferencia: número de referencia\n\nResponde con 'listo' cuando hayas enviado la información."
+    validation:
+      required: true
+      min_length: 10
+      error_message: "Por favor, proporciona información de pago completa."
+    next_step: final_confirmation
+
+  - id: final_confirmation
+    type: message
+    name: Final Confirmation
+    message: "✅ ¡Pedido confirmado!\n\n📋 Número de pedido: {{order_id}}\n📅 Fecha: {{order_date}}\n💰 Total: ${{total}}\n🚚 Estado: Procesando\n⏰ Tiempo estimado: 30-45 minutos\n\n¡Gracias por tu compra! Te contactaremos pronto."
+    next_step: end
+
+  - id: cancel_order
+    type: message
+    name: Cancel Order
+    message: "❌ Pedido cancelado. ¿Hay algo más en lo que pueda ayudarte?"
+    next_step: end
+
+  - id: show_validation_error
+    type: message
+    name: Show Validation Error
+    message: "❌ Lo siento, el formato no es correcto. Por favor, intenta nuevamente."
+    next_step: collect_quantity
+
+  - id: show_timeout
+    type: message
+    name: Show Timeout
+    message: "⏰ La conversación ha expirado. ¿Te gustaría empezar de nuevo?"
+    next_step: greeting
+
+  - id: show_invalid_choice
+    type: message
+    name: Show Invalid Choice
+    message: "❌ Opción no válida. Por favor, selecciona una de las opciones disponibles."
+    next_step: product_selection
+
+  - id: end
+    type: end
+    name: End
+    message: "¡Gracias por contactarnos! 😊"
+
+metadata:
+  version: "1.0"
+  author: "Template Creator"
+  last_updated: "2024-10-10"
+  tags: ["order", "ecommerce", "payment"]
