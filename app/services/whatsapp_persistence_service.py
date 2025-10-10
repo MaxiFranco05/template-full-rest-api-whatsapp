@@ -13,6 +13,20 @@ from app.db.database import get_db
 logger = logging.getLogger(__name__)
 
 
+def _make_json_serializable(obj):
+    """
+    Convertir objetos no serializables a JSON en strings
+    """
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    elif isinstance(obj, dict):
+        return {k: _make_json_serializable(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_make_json_serializable(item) for item in obj]
+    else:
+        return obj
+
+
 class WhatsAppPersistenceService:
     """Servicio para manejar persistencia de datos de WhatsApp"""
     
@@ -147,6 +161,23 @@ class WhatsAppPersistenceService:
             WhatsAppMessage: Mensaje guardado
         """
         try:
+            # Procesar timestamp para asegurar que sea datetime
+            timestamp = message_data.get('timestamp')
+            if isinstance(timestamp, str):
+                # Si es string, convertir a datetime
+                try:
+                    timestamp = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                except:
+                    timestamp = datetime.utcnow()
+            elif not isinstance(timestamp, datetime):
+                timestamp = datetime.utcnow()
+            
+            # Procesar metadata para asegurar que sea JSON serializable
+            metadata = message_data.get('metadata', {})
+            if metadata:
+                # Convertir cualquier datetime en metadata a string
+                metadata = _make_json_serializable(metadata)
+            
             message = WhatsAppMessage(
                 conversation_id=conversation_id,
                 message_id=message_data.get('message_id'),
@@ -154,9 +185,9 @@ class WhatsAppPersistenceService:
                 message_type=message_data.get('message_type', 'text'),
                 content=message_data.get('content'),
                 media_url=message_data.get('media_url'),
-                timestamp=message_data.get('timestamp', datetime.utcnow()),
+                timestamp=timestamp,
                 status=message_data.get('status', 'sent'),
-                message_metadata=message_data.get('metadata', {})
+                message_metadata=metadata
             )
             
             self.db.add(message)
