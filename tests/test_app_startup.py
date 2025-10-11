@@ -54,14 +54,13 @@ def test_app_startup():
         print("\n🎉 SUCCESS: Application can start successfully!")
         print("✅ All core components are working")
         print("✅ Architecture reorganization is successful")
-        return True
+        assert True, "Application startup successful"
         
     except Exception as e:
         print(f"\n❌ FAILURE: Application startup failed: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        assert False, f"Application startup failed: {e}"
 
 if __name__ == "__main__":
-    success = test_app_startup()
-    sys.exit(0 if success else 1)
+    test_app_startup()

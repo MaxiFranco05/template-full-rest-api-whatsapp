@@ -10,6 +10,8 @@ from app.core.logging_config import setup_logging
 from app.core.error_handling import register_exception_handlers
 from app.api.v1.api import api_router
 from app.db.database import engine, Base
+from app.utils.performance import PerformanceMiddleware
+from app.utils.rate_limiting import RateLimitMiddleware
 import logging
 from datetime import datetime
 
@@ -40,6 +42,12 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
+# Agregar middleware de performance
+app.add_middleware(PerformanceMiddleware)
+
+# Agregar middleware de rate limiting
+app.add_middleware(RateLimitMiddleware, default_rule="api_global")
+
 # Configurar CORS
 app.add_middleware(
     CORSMiddleware,
@@ -67,6 +75,19 @@ async def health_check():
         "timestamp": datetime.now().isoformat(),
         "version": settings.APP_VERSION,
         "environment": "development" if settings.DEBUG else "production"
+    }
+
+
+@app.get("/performance")
+async def performance_stats():
+    """Performance statistics endpoint"""
+    from app.utils.performance import get_performance_stats
+    from app.utils.rate_limiting import get_rate_limit_stats
+    
+    return {
+        "performance": get_performance_stats(),
+        "rate_limiting": get_rate_limit_stats(),
+        "timestamp": datetime.now().isoformat()
     }
 
 

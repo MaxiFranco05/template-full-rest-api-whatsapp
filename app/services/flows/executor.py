@@ -177,11 +177,17 @@ class FunctionExecutor:
                 # Recursive substitution for nested objects
                 prepared_params[key] = self._prepare_parameters(value, context)
             elif isinstance(value, list):
-                # Handle lists
-                prepared_params[key] = [
-                    self._prepare_parameters(item, context) if isinstance(item, dict) else item
-                    for item in value
-                ]
+                # Handle lists with context substitution
+                prepared_params[key] = []
+                for item in value:
+                    if isinstance(item, str) and item.startswith("{{") and item.endswith("}}"):
+                        # Context variable substitution for list items
+                        var_name = item[2:-2].strip()
+                        prepared_params[key].append(context.get(var_name, item))
+                    elif isinstance(item, dict):
+                        prepared_params[key].append(self._prepare_parameters(item, context))
+                    else:
+                        prepared_params[key].append(item)
             else:
                 prepared_params[key] = value
         
