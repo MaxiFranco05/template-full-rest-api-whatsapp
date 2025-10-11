@@ -131,7 +131,7 @@ EXAMPLE_FLOW_JSON = {
     "description": "Simple welcome conversation",
     "start_step": "welcome_message",
     "variables": {
-        "company_name": "Mi Empresa",
+        "company_name": "{{company_name}}",
         "support_hours": "9:00 - 18:00"
     },
     "error_handling": {
@@ -214,7 +214,7 @@ EXAMPLE_FLOW_JSON = {
             "id": "show_contact",
             "type": "message",
             "name": "Show Contact",
-            "message": "📞 Información de contacto:\nTeléfono: +1234567890\nEmail: contacto@empresa.com\nHorario: {{support_hours}}",
+            "message": "📞 Información de contacto:\nTeléfono: {{company_phone}}\nEmail: {{company_email}}\nHorario: {{support_hours}}",
             "next_step": "end"
         },
         {

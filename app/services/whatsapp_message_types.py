@@ -192,6 +192,70 @@ class WhatsAppMessageBuilder:
             "type": "sticker",
             "sticker": {"id": sticker_id}
         }
+    
+    def catalog_message(self, catalog_id: str, product_sections: List[Dict[str, Any]], 
+                       header_text: str = "🛍️ Nuestro Catálogo de Productos",
+                       body_text: str = "Elegí una opción para ver más detalles 👇",
+                       footer_text: str = "Productos disponibles") -> Dict[str, Any]:
+        """
+        Create a native WhatsApp catalog message with product list
+        
+        Args:
+            catalog_id: WhatsApp catalog ID
+            product_sections: List of sections (REQUIRED - no default hardcoded data)
+            header_text: Header text for the message
+            body_text: Body text for the message
+            footer_text: Footer text for the message
+        """
+        if not product_sections:
+            # Return error message instead of hardcoded data
+            return {
+                "messaging_product": "whatsapp",
+                "recipient_type": "individual",
+                "to": self.phone_number,
+                "type": "text",
+                "text": {"body": "❌ Error: No hay productos disponibles en el catálogo. Por favor, contacta con soporte."}
+            }
+        
+        return {
+            "messaging_product": "whatsapp",
+            "recipient_type": "individual",
+            "to": self.phone_number,
+            "type": "interactive",
+            "interactive": {
+                "type": "product_list",
+                "header": {
+                    "type": "text",
+                    "text": header_text
+                },
+                "body": {
+                    "text": body_text
+                },
+                "footer": {
+                    "text": footer_text
+                },
+                "action": {
+                    "catalog_id": catalog_id,
+                    "sections": product_sections
+                }
+            }
+        }
+    
+    def create_product_section(self, title: str, product_retailer_ids: List[str]) -> Dict[str, Any]:
+        """
+        Helper method to create a product section for catalog messages
+        
+        Args:
+            title: Section title
+            product_retailer_ids: List of product retailer IDs
+        """
+        return {
+            "title": title,
+            "product_items": [
+                {"product_retailer_id": product_id} 
+                for product_id in product_retailer_ids
+            ]
+        }
 
 
 class WhatsAppMessageTemplates:
@@ -240,6 +304,29 @@ class WhatsAppMessageTemplates:
             "body": "Aquí tienes nuestros productos disponibles:",
             "button_text": "Ver Productos",
             "sections": sections
+        }
+    
+    def native_catalog_message(self, catalog_id: str, product_sections: List[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Generate native WhatsApp catalog message
+        
+        Args:
+            catalog_id: WhatsApp catalog ID
+            product_sections: List of product sections (REQUIRED - no default hardcoded data)
+        """
+        if product_sections is None or not product_sections:
+            return {
+                "type": "text",
+                "body": "❌ Error: No hay productos disponibles en el catálogo. Por favor, contacta con soporte."
+            }
+        
+        return {
+            "type": "catalog",
+            "catalog_id": catalog_id,
+            "product_sections": product_sections,
+            "header_text": "🛍️ Nuestro Catálogo de Productos",
+            "body_text": "Elegí una opción para ver más detalles 👇",
+            "footer_text": "Productos disponibles"
         }
     
     def service_menu_message(self) -> Dict[str, Any]:

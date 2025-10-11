@@ -1,401 +1,190 @@
-# WhatsApp Message Types
+# 📱 WhatsApp Business API - Tipos de Mensajes Disponibles
 
-Este documento describe el sistema completo de tipos de mensajes de WhatsApp Business API implementado en el template.
+## 🔧 WhatsAppMessageBuilder - Métodos de Construcción
 
-## 📋 Tabla de Contenidos
+### 1. **text_message(text: str)**
+- **Tipo**: `text`
+- **Descripción**: Mensaje de texto simple
+- **Uso**: `builder.text_message("Hola, ¿cómo estás?")`
 
-- [Tipos de Mensajes Disponibles](#tipos-de-mensajes-disponibles)
-- [WhatsAppMessageBuilder](#whatsappmessagebuilder)
-- [WhatsAppMessageTemplates](#whatsappmessagetemplates)
-- [WhatsAppMessageSender](#whatsappmessagesender)
-- [Ejemplos de Uso](#ejemplos-de-uso)
-- [Integración con el Flujo de Conversación](#integración-con-el-flujo-de-conversación)
+### 2. **interactive_button_message(body_text: str, buttons: List[Dict])**
+- **Tipo**: `interactive` (button)
+- **Descripción**: Mensaje con botones de respuesta
+- **Límite**: Máximo 3 botones
+- **Uso**: `builder.interactive_button_message("Elige una opción:", [{"id": "op1", "title": "Opción 1"}])`
 
-## Tipos de Mensajes Disponibles
+### 3. **interactive_list_message(body_text: str, button_text: str, sections: List[Dict])**
+- **Tipo**: `interactive` (list)
+- **Descripción**: Mensaje con lista desplegable
+- **Límite**: Máximo 10 elementos por lista
+- **Uso**: `builder.interactive_list_message("Selecciona:", "Ver opciones", sections)`
 
-### 1. Mensajes de Texto
-Mensajes simples de texto plano.
+### 4. **media_message(media_type: str, media_url: str, caption: str = None)**
+- **Tipo**: `image`, `document`, `audio`, `video`
+- **Descripción**: Mensaje con archivos multimedia
+- **Tipos soportados**: image, document, audio, video
+- **Uso**: `builder.media_message("image", "https://example.com/image.jpg", "Mi imagen")`
+
+### 5. **template_message(template_name: str, language_code: str = "es", components: List[Dict] = None)**
+- **Tipo**: `template`
+- **Descripción**: Mensaje usando plantillas pre-aprobadas
+- **Requisito**: Plantilla debe estar aprobada por Meta
+- **Uso**: `builder.template_message("hello_world", "es")`
+
+### 6. **location_message(latitude: float, longitude: float, name: str = None, address: str = None)**
+- **Tipo**: `location`
+- **Descripción**: Mensaje con ubicación geográfica
+- **Uso**: `builder.location_message(-34.6037, -58.3816, "Buenos Aires")`
+
+### 7. **contact_message(contacts: List[Dict])**
+- **Tipo**: `contacts`
+- **Descripción**: Mensaje con información de contacto
+- **Uso**: `builder.contact_message([{"name": {"formatted_name": "Juan"}, "phones": [{"phone": "+1234567890"}]}])`
+
+### 8. **sticker_message(sticker_id: str)**
+- **Tipo**: `sticker`
+- **Descripción**: Mensaje con sticker
+- **Requisito**: ID del sticker válido
+- **Uso**: `builder.sticker_message("sticker_id_123")`
+
+### 9. **catalog_message(catalog_id: str, product_sections: List[Dict], header_text: str, body_text: str, footer_text: str)**
+- **Tipo**: `interactive` (product_list)
+- **Descripción**: Mensaje con catálogo de productos nativo
+- **Nuevo**: ✅ Agregado recientemente
+- **Uso**: `builder.catalog_message(catalog_id, sections, "Catálogo", "Elige productos", "Disponible")`
+
+### 10. **create_product_section(title: str, product_retailer_ids: List[str])**
+- **Tipo**: Helper method
+- **Descripción**: Método auxiliar para crear secciones de productos
+- **Uso**: `builder.create_product_section("Más vendidos", ["prod1", "prod2"])`
+
+## 📋 WhatsAppMessageTemplates - Plantillas Predefinidas
+
+### 1. **welcome_message(company_name: str)**
+- **Descripción**: Mensaje de bienvenida personalizable
+- **Uso**: `templates.welcome_message("Mi Empresa")`
+
+### 2. **product_catalog_message()**
+- **Descripción**: Catálogo de productos usando lista interactiva
+- **Uso**: `templates.product_catalog_message()`
+
+### 3. **native_catalog_message(catalog_id: str, product_sections: List[Dict] = None)**
+- **Descripción**: Catálogo nativo de WhatsApp con productos reales
+- **Nuevo**: ✅ Agregado recientemente
+- **Uso**: `templates.native_catalog_message(catalog_id)`
+
+### 4. **service_menu_message()**
+- **Descripción**: Menú de servicios usando lista interactiva
+- **Uso**: `templates.service_menu_message()`
+
+### 5. **contact_info_message()**
+- **Descripción**: Información de contacto de la empresa
+- **Uso**: `templates.contact_info_message()`
+
+### 6. **order_confirmation_message(order_data: Dict)**
+- **Descripción**: Confirmación de pedido
+- **Uso**: `templates.order_confirmation_message({"order_id": "123", "total": 100})`
+
+### 7. **appointment_confirmation_message(appointment_data: Dict)**
+- **Descripción**: Confirmación de cita
+- **Uso**: `templates.appointment_confirmation_message({"date": "2024-01-01", "time": "10:00"})`
+
+## 🚀 WhatsAppMessageSender - Envío de Mensajes
+
+### **send_message(message_data: Dict)**
+- **Descripción**: Envía cualquier tipo de mensaje a WhatsApp
+- **Uso**: `sender.send_message(message_data)`
+
+## 📊 Resumen de Tipos de Mensajes
+
+| Tipo | Método | Estado | Descripción |
+|------|--------|--------|-------------|
+| `text` | `text_message()` | ✅ Funcional | Mensaje de texto simple |
+| `interactive` (button) | `interactive_button_message()` | ✅ Funcional | Botones de respuesta |
+| `interactive` (list) | `interactive_list_message()` | ✅ Funcional | Lista desplegable |
+| `interactive` (product_list) | `catalog_message()` | ✅ **NUEVO** | Catálogo de productos |
+| `image` | `media_message()` | ✅ Funcional | Imagen con caption |
+| `document` | `media_message()` | ✅ Funcional | Documento con caption |
+| `audio` | `media_message()` | ✅ Funcional | Audio |
+| `video` | `media_message()` | ✅ Funcional | Video con caption |
+| `location` | `location_message()` | ✅ Funcional | Ubicación geográfica |
+| `contacts` | `contact_message()` | ✅ Funcional | Información de contacto |
+| `sticker` | `sticker_message()` | ⚠️ Limitado | Sticker (requiere ID válido) |
+| `template` | `template_message()` | ⚠️ Requiere aprobación | Plantilla pre-aprobada |
+
+## 🎯 Tipos de Mensajes por Categoría
+
+### **Mensajes Básicos**
+- Text messages
+- Media messages (image, document, audio, video)
+
+### **Mensajes Interactivos**
+- Button messages
+- List messages
+- **Catalog messages** (NUEVO)
+
+### **Mensajes Especiales**
+- Location messages
+- Contact messages
+- Sticker messages
+- Template messages
+
+### **Mensajes de Negocio**
+- Welcome messages
+- Service menus
+- Order confirmations
+- Appointment confirmations
+
+## 💡 Ejemplos de Uso
 
 ```python
-result = whatsapp_service.message_sender.send_text(
-    phone_number="1234567890",
-    text="¡Hola! ¿En qué puedo ayudarte?"
+# Inicializar
+builder = WhatsAppMessageBuilder("+1234567890")
+templates = WhatsAppMessageTemplates()
+
+# Mensaje de texto
+text_msg = builder.text_message("¡Hola!")
+
+# Mensaje con botones
+button_msg = builder.interactive_button_message(
+    "¿Qué necesitas?", 
+    [{"id": "help", "title": "Ayuda"}, {"id": "info", "title": "Info"}]
 )
-```
 
-### 2. Mensajes Interactivos con Botones
-Mensajes que incluyen hasta 3 botones interactivos.
-
-```python
-buttons = [
-    {"id": "products", "title": "Ver Productos"},
-    {"id": "services", "title": "Servicios"},
-    {"id": "contact", "title": "Contacto"}
-]
-
-result = whatsapp_service.message_sender.send_buttons(
-    phone_number="1234567890",
-    text="¿Qué te interesa?",
-    buttons=buttons
-)
-```
-
-### 3. Mensajes de Lista Interactiva
-Mensajes con listas desplegables para selección múltiple.
-
-```python
-sections = [{
-    "title": "Productos",
-    "rows": [
-        {"id": "prod1", "title": "Producto 1", "description": "$100"},
-        {"id": "prod2", "title": "Producto 2", "description": "$200"}
-    ]
-}]
-
-result = whatsapp_service.message_sender.send_list(
-    phone_number="1234567890",
-    text="Selecciona un producto:",
-    button_text="Ver Productos",
-    sections=sections
-)
-```
-
-### 4. Mensajes Multimedia
-Soporte para imágenes, videos, audio y documentos.
-
-```python
-# Imagen con caption
-result = whatsapp_service.message_sender.send_media(
-    phone_number="1234567890",
-    media_type="image",
-    media_url="https://example.com/image.jpg",
-    caption="¡Mira nuestro producto!"
+# Mensaje de catálogo (NUEVO)
+catalog_msg = builder.catalog_message(
+    catalog_id="123456789",
+    product_sections=[
+        builder.create_product_section("Más vendidos", ["prod1", "prod2"]),
+        builder.create_product_section("Nuevos", ["prod3", "prod4"])
+    ],
+    header_text="🛍️ Nuestro Catálogo",
+    body_text="Elige productos:",
+    footer_text="Disponible ahora"
 )
 
-# Video
-result = whatsapp_service.message_sender.send_media(
-    phone_number="1234567890",
-    media_type="video",
-    media_url="https://example.com/video.mp4",
-    caption="Tutorial del producto"
-)
-
-# Documento PDF
-result = whatsapp_service.message_sender.send_media(
-    phone_number="1234567890",
-    media_type="document",
-    media_url="https://example.com/catalog.pdf",
-    caption="Catálogo completo"
-)
+# Plantilla de catálogo (NUEVO)
+template_catalog = templates.native_catalog_message("123456789")
 ```
 
-### 5. Mensajes de Ubicación
-Envío de coordenadas geográficas.
+## 🔧 Configuración Requerida
 
-```python
-result = whatsapp_service.message_sender.send_location(
-    phone_number="1234567890",
-    latitude=40.7128,
-    longitude=-74.0060,
-    name="Mi Empresa",
-    address="Calle Principal 123"
-)
+### **Variables de Entorno**
+```bash
+WHATSAPP_ACCESS_TOKEN=tu_token
+WHATSAPP_PHONE_NUMBER_ID=tu_phone_id
+WHATSAPP_CATALOG_ID=tu_catalog_id  # Para mensajes de catálogo
 ```
 
-### 6. Mensajes de Contacto
-Envío de tarjetas de contacto.
+### **Permisos del Token**
+- `whatsapp_business_messaging` - Para enviar mensajes
+- `whatsapp_business_management` - Para catálogos
+- `business_management` - Para gestión comercial
 
-```python
-contacts = [{
-    "name": {
-        "formatted_name": "Juan Pérez",
-        "first_name": "Juan"
-    },
-    "phones": [{
-        "phone": "+1234567890",
-        "type": "WORK"
-    }],
-    "emails": [{
-        "email": "juan@empresa.com",
-        "type": "WORK"
-    }]
-}]
+## 📈 Estadísticas de Implementación
 
-result = whatsapp_service.message_sender.send_contact(
-    phone_number="1234567890",
-    contacts=contacts
-)
-```
-
-### 7. Mensajes de Sticker
-Envío de stickers.
-
-```python
-result = whatsapp_service.message_sender.send_sticker(
-    phone_number="1234567890",
-    sticker_id="sticker_id_here"
-)
-```
-
-### 8. Mensajes de Plantilla
-Uso de plantillas pre-aprobadas por WhatsApp.
-
-```python
-components = [{
-    "type": "body",
-    "parameters": [{
-        "type": "text",
-        "text": "Juan"
-    }]
-}]
-
-result = whatsapp_service.message_sender.send_template(
-    phone_number="1234567890",
-    template_name="hello_world",
-    language_code="es",
-    components=components
-)
-```
-
-## WhatsAppMessageBuilder
-
-Clase builder para construir mensajes de WhatsApp de forma programática.
-
-```python
-from app.services.whatsapp_message_types import WhatsAppMessageBuilder
-
-builder = WhatsAppMessageBuilder("1234567890")
-
-# Construir mensaje de texto
-text_message = builder.text_message("Hola mundo")
-
-# Construir mensaje con botones
-button_message = builder.interactive_button_message(
-    "Selecciona una opción:",
-    [
-        {"id": "option1", "title": "Opción 1"},
-        {"id": "option2", "title": "Opción 2"}
-    ]
-)
-```
-
-## WhatsAppMessageTemplates
-
-Plantillas predefinidas para escenarios comunes de negocio.
-
-### Mensaje de Bienvenida
-```python
-from app.services.whatsapp_message_types import WhatsAppMessageTemplates
-
-welcome_template = WhatsAppMessageTemplates.welcome_message("Mi Empresa")
-# Retorna: {"body": "...", "buttons": [...]}
-```
-
-### Catálogo de Productos
-```python
-products = [
-    {"id": "1", "name": "Producto 1", "price": "100"},
-    {"id": "2", "name": "Producto 2", "price": "200"}
-]
-
-catalog_template = WhatsAppMessageTemplates.product_catalog_message(products)
-# Retorna estructura para mensaje de lista
-```
-
-### Información de Contacto
-```python
-company_info = {
-    "name": "Mi Empresa",
-    "phone": "+1234567890",
-    "email": "contacto@empresa.com",
-    "address": "Calle Principal 123",
-    "website": "https://empresa.com"
-}
-
-contact_text = WhatsAppMessageTemplates.contact_info_message(company_info)
-# Retorna texto formateado con información de contacto
-```
-
-### Confirmación de Pedido
-```python
-order_data = {
-    "order_id": "ORD-2024-001",
-    "date": "2024-01-15",
-    "total": "150.00",
-    "status": "Procesando"
-}
-
-confirmation_text = WhatsAppMessageTemplates.order_confirmation_message(order_data)
-# Retorna texto formateado de confirmación
-```
-
-### Confirmación de Cita
-```python
-appointment_data = {
-    "client_name": "Juan Pérez",
-    "date": "2024-01-20",
-    "time": "10:00 AM",
-    "location": "Oficina Principal",
-    "service": "Consultoría"
-}
-
-confirmation_text = WhatsAppMessageTemplates.appointment_confirmation_message(appointment_data)
-# Retorna texto formateado de confirmación de cita
-```
-
-## WhatsAppMessageSender
-
-Servicio principal para enviar mensajes a través de la API de WhatsApp.
-
-```python
-# El sender se inicializa automáticamente en WhatsAppService
-sender = whatsapp_service.message_sender
-
-# Enviar diferentes tipos de mensajes
-await sender.send_text(phone_number, "Hola")
-await sender.send_buttons(phone_number, "Opciones:", buttons)
-await sender.send_list(phone_number, "Selecciona:", "Ver", sections)
-await sender.send_media(phone_number, "image", url, caption)
-```
-
-## Ejemplos de Uso
-
-### Flujo de Conversación Completo
-```python
-async def handle_conversation_flow(phone_number: str, user_message: str):
-    """Ejemplo de flujo de conversación usando diferentes tipos de mensajes"""
-    
-    if "hola" in user_message.lower():
-        # Enviar mensaje de bienvenida con botones
-        welcome_template = WhatsAppMessageTemplates.welcome_message("Mi Empresa")
-        await whatsapp_service.message_sender.send_buttons(
-            phone_number,
-            welcome_template["body"],
-            welcome_template["buttons"]
-        )
-    
-    elif "productos" in user_message.lower():
-        # Enviar catálogo de productos
-        products = get_products_from_database()
-        catalog_template = WhatsAppMessageTemplates.product_catalog_message(products)
-        await whatsapp_service.message_sender.send_list(
-            phone_number,
-            catalog_template["body"],
-            catalog_template["button_text"],
-            catalog_template["sections"]
-        )
-    
-    elif "contacto" in user_message.lower():
-        # Enviar información de contacto
-        company_info = get_company_info()
-        contact_text = WhatsAppMessageTemplates.contact_info_message(company_info)
-        await whatsapp_service.message_sender.send_text(phone_number, contact_text)
-    
-    elif "ubicacion" in user_message.lower():
-        # Enviar ubicación
-        await whatsapp_service.message_sender.send_location(
-            phone_number,
-            latitude=40.7128,
-            longitude=-74.0060,
-            name="Mi Empresa",
-            address="Calle Principal 123"
-        )
-```
-
-### Manejo de Respuestas de Botones
-```python
-async def handle_button_response(phone_number: str, button_id: str):
-    """Manejar respuestas de botones interactivos"""
-    
-    if button_id == "products":
-        # Mostrar productos
-        products = get_products()
-        catalog_template = WhatsAppMessageTemplates.product_catalog_message(products)
-        await whatsapp_service.message_sender.send_list(
-            phone_number,
-            catalog_template["body"],
-            catalog_template["button_text"],
-            catalog_template["sections"]
-        )
-    
-    elif button_id == "services":
-        # Mostrar servicios
-        services = get_services()
-        service_template = WhatsAppMessageTemplates.service_menu_message(services)
-        await whatsapp_service.message_sender.send_list(
-            phone_number,
-            service_template["body"],
-            service_template["button_text"],
-            service_template["sections"]
-        )
-    
-    elif button_id == "contact":
-        # Mostrar información de contacto
-        company_info = get_company_info()
-        contact_text = WhatsAppMessageTemplates.contact_info_message(company_info)
-        await whatsapp_service.message_sender.send_text(phone_number, contact_text)
-```
-
-## Integración con el Flujo de Conversación
-
-El sistema está integrado con el flujo de conversación existente a través del método `_send_interactive_response`:
-
-```python
-# En WhatsAppService
-def _send_interactive_response(self, phone_number: str, conversation_state: str, contact_info: Dict[str, Any]):
-    """Enviar respuesta interactiva basada en el estado de la conversación"""
-    
-    if conversation_state == "initial":
-        # Mensaje de bienvenida con botones
-        welcome_template = WhatsAppMessageTemplates.welcome_message(settings.COMPANY_NAME)
-        return self.message_sender.send_buttons(
-            phone_number,
-            welcome_template["body"],
-            welcome_template["buttons"]
-        )
-    
-    elif conversation_state == "waiting_for_selection":
-        # Menú de productos/servicios
-        products = get_products_from_database()
-        catalog_template = WhatsAppMessageTemplates.product_catalog_message(products)
-        return self.message_sender.send_list(
-            phone_number,
-            catalog_template["body"],
-            catalog_template["button_text"],
-            catalog_template["sections"]
-        )
-    
-    # ... más estados
-```
-
-## Configuración
-
-### Variables de Entorno Requeridas
-```env
-COMPANY_NAME=Mi Empresa
-COMPANY_PHONE=+1234567890
-COMPANY_EMAIL=contacto@empresa.com
-COMPANY_ADDRESS=Calle Principal 123
-COMPANY_WEBSITE=https://empresa.com
-```
-
-### Personalización de Plantillas
-Las plantillas pueden ser personalizadas modificando los métodos en `WhatsAppMessageTemplates` o creando nuevas plantillas específicas para tu negocio.
-
-## Limitaciones de WhatsApp
-
-- **Botones**: Máximo 3 botones por mensaje
-- **Listas**: Máximo 10 elementos por sección
-- **Secciones**: Máximo 10 secciones por mensaje
-- **Plantillas**: Deben estar pre-aprobadas por WhatsApp
-- **Medios**: URLs deben ser accesibles públicamente
-
-## Mejores Prácticas
-
-1. **Usa botones para opciones principales** (máximo 3)
-2. **Usa listas para catálogos extensos** (hasta 10 elementos)
-3. **Incluye captions descriptivos** en medios
-4. **Personaliza las plantillas** según tu negocio
-5. **Maneja errores** con fallbacks a mensajes de texto
-6. **Usa logs de desarrollo** para debugging
-7. **Guarda mensajes** en la base de datos para persistencia
+- **Total de tipos**: 12 tipos de mensajes
+- **Funcionales**: 10 tipos (83.3%)
+- **Limitados**: 2 tipos (16.7%)
+- **Nuevos**: 2 tipos agregados (catalog_message, native_catalog_message)
+- **Success Rate**: 87.5% en tests

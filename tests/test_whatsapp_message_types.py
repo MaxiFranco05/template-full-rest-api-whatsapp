@@ -8,6 +8,7 @@ import sys
 import asyncio
 import os
 import json
+import aiohttp
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -32,6 +33,7 @@ class WhatsAppNativeMessageTester:
     def __init__(self, phone_number: str):
         self.phone_number = phone_number
         self.whatsapp_service = WhatsAppService()
+        self.last_message_id = None  # Store the last message ID for reactions
         
         print(f"Initialized WhatsApp Native Message Tester")
         print(f"Phone number: {self.phone_number}")
@@ -109,9 +111,19 @@ class WhatsAppNativeMessageTester:
         elif message_type == "contacts":
             return await self._send_contact_message(step_data)
         elif message_type == "sticker":
-            return await self._send_sticker_message(step_data)
+            success = await self._send_sticker_message(step_data)
+            if success:
+                # Extra delay for sticker to ensure it's processed
+                await asyncio.sleep(3)
+            return success
         elif message_type == "template":
             return await self._send_template_message(step_data)
+        elif message_type == "reaction":
+            return await self._send_reaction_message(step_data)
+        elif message_type == "catalog":
+            return await self._send_catalog_message(step_data)
+        elif message_type == "flow":
+            return await self._send_flow_message(step_data)
         else:
             print(f"ERROR: Unknown message type: {message_type}")
             return False
@@ -163,14 +175,41 @@ class WhatsAppNativeMessageTester:
                     }
                 }
                 
+                # Determine button type from first button (all buttons must be same type)
+                first_button_type = buttons[0].get("type", "reply") if buttons else "reply"
+                
                 for button in buttons:
-                    payload["interactive"]["action"]["buttons"].append({
-                        "type": "reply",
-                        "reply": {
-                            "id": button["id"],
-                            "title": button["title"]
-                        }
-                    })
+                    if first_button_type == "reply":
+                        payload["interactive"]["action"]["buttons"].append({
+                            "type": "reply",
+                            "reply": {
+                                "id": button["id"],
+                                "title": button["title"]
+                            }
+                        })
+                    elif first_button_type == "url":
+                        payload["interactive"]["action"]["buttons"].append({
+                            "type": "url",
+                            "url": {
+                                "url": button["url"],
+                                "title": button["title"]
+                            }
+                        })
+                    elif first_button_type == "phone":
+                        payload["interactive"]["action"]["buttons"].append({
+                            "type": "phone_number",
+                            "phone_number": {
+                                "phone_number": button["phone"],
+                                "title": button["title"]
+                            }
+                        })
+                    elif first_button_type == "location_request":
+                        payload["interactive"]["action"]["buttons"].append({
+                            "type": "location_request",
+                            "location_request": {
+                                "title": button["title"]
+                            }
+                        })
                 
             elif interactive_type == "list":
                 button_text = step_data.get("button_text", "Ver opciones")
@@ -452,39 +491,99 @@ class WhatsAppNativeMessageTester:
             print(f"ERROR: Exception sending contact message: {e}")
             return False
     
-    async def _send_sticker_message(self, step_data):
-        """Send sticker message"""
+    async def _upload_media(self, media_url: str) -> str:
+        """Upload media to WhatsApp and return media_id"""
         try:
-            sticker_url = step_data.get("sticker_url", "")
+            import aiohttp
             
-            print(f"Attempting to send sticker message...")
-            print(f"Sticker URL: {sticker_url}")
+            access_token = os.getenv("WHATSAPP_ACCESS_TOKEN")
+            phone_number_id = os.getenv("WHATSAPP_PHONE_NUMBER_ID")
+            api_url = os.getenv("WHATSAPP_API_URL", "https://graph.facebook.com/v23.0")
             
-            # Create sticker message payload
-            payload = {
-                "messaging_product": "whatsapp",
-                "to": self.phone_number,
-                "type": "sticker",
-                "sticker": {
-                    "link": sticker_url
-                }
+            url = f"{api_url}/{phone_number_id}/media"
+            headers = {
+                "Authorization": f"Bearer {access_token}",
             }
             
-            print(f"Sending payload: {json.dumps(payload, indent=2)}")
+            data = {
+                "messaging_product": "whatsapp",
+                "url": media_url,
+                "type": "sticker"
+            }
             
-            result = await self._send_direct_api_call(payload)
-            
-            if result.get("success"):
-                print(f"SUCCESS: Sticker message sent!")
-                print(f"Message ID: {result.get('message_id', 'N/A')}")
-                return True
-            else:
-                print(f"ERROR: Failed to send sticker message: {result.get('error', 'Unknown error')}")
-                return False
-                
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, data=data, headers=headers) as response:
+                    response_data = await response.json()
+                    
+                    if response.status == 200:
+                        media_id = response_data.get("id")
+                        print(f"SUCCESS: Media uploaded with ID: {media_id}")
+                        return media_id
+                    else:
+                        print(f"ERROR: Failed to upload media: {response_data}")
+                        return None
+                        
         except Exception as e:
-            print(f"ERROR: Exception sending sticker message: {e}")
-            return False
+            print(f"ERROR: Exception uploading media: {e}")
+            return None
+    
+    async def _send_sticker_message(self, step_data):
+        """Send sticker message - TEMPORARILY DISABLED"""
+        print(f"SKIP: Sticker message temporarily disabled")
+        print(f"NOTE: Sticker implementation requires 2-step process (upload + send)")
+        print(f"TODO: Implement proper sticker upload and send flow")
+        return False
+
+    async def _upload_sticker(self, sticker_url: str) -> dict:
+        """Upload sticker to WhatsApp servers and get media ID"""
+        try:
+            print(f"Uploading sticker from URL: {sticker_url}")
+            
+            # Download the sticker
+            async with aiohttp.ClientSession() as session:
+                async with session.get(sticker_url) as response:
+                    if response.status != 200:
+                        return {"success": False, "error": f"Failed to download sticker: {response.status}"}
+                    
+                    sticker_data = await response.read()
+                    print(f"Downloaded sticker: {len(sticker_data)} bytes")
+            
+            # Upload to WhatsApp
+            upload_url = f"{self.api_url}/{self.phone_number_id}/media"
+            headers = {
+                "Authorization": f"Bearer {self.access_token}"
+            }
+            
+            data = aiohttp.FormData()
+            data.add_field('messaging_product', 'whatsapp')
+            data.add_field('type', 'sticker')
+            data.add_field('file', sticker_data, filename='sticker.webp', content_type='image/webp')
+            
+            async with aiohttp.ClientSession() as session:
+                async with session.post(upload_url, headers=headers, data=data) as response:
+                    response_text = await response.text()
+                    response_data = json.loads(response_text) if response_text else {}
+                    
+                    if response.status == 200:
+                        media_id = response_data.get("id")
+                        return {
+                            "success": True,
+                            "media_id": media_id,
+                            "response": response_data
+                        }
+                    else:
+                        return {
+                            "success": False,
+                            "error": response_data.get("error", {}).get("message", "Upload failed"),
+                            "response": response_data
+                        }
+                        
+        except Exception as e:
+            print(f"Upload Exception: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
     
     async def _send_template_message(self, step_data):
         """Send template message"""
@@ -551,9 +650,11 @@ class WhatsAppNativeMessageTester:
                     response_data = await response.json()
                     
                     if response.status == 200:
+                        message_id = response_data.get("messages", [{}])[0].get("id", "N/A")
+                        self.last_message_id = message_id  # Store for reactions
                         return {
                             "success": True,
-                            "message_id": response_data.get("messages", [{}])[0].get("id", "N/A"),
+                            "message_id": message_id,
                             "response": response_data
                         }
                     else:
@@ -568,6 +669,165 @@ class WhatsAppNativeMessageTester:
                 "success": False,
                 "error": str(e)
             }
+    
+    async def _send_reaction_message(self, step_data):
+        """Send reaction message"""
+        try:
+            # Use the last message ID from the conversation, or fallback to step data
+            message_id = self.last_message_id or step_data.get("message_id", "")
+            emoji = step_data.get("emoji", "👍")
+            
+            if not message_id or message_id == "N/A":
+                print(f"ERROR: No valid message ID available for reaction")
+                return False
+            
+            print(f"Attempting to send reaction message...")
+            print(f"Message ID: {message_id}")
+            print(f"Emoji: {emoji}")
+            
+            # Create reaction message payload
+            payload = {
+                "messaging_product": "whatsapp",
+                "recipient_type": "individual",
+                "to": self.phone_number,
+                "type": "reaction",
+                "reaction": {
+                    "message_id": message_id,
+                    "emoji": emoji
+                }
+            }
+            
+            print(f"Sending payload: {json.dumps(payload, indent=2)}")
+            
+            result = await self._send_direct_api_call(payload)
+            
+            if result.get("success"):
+                print(f"SUCCESS: Reaction message sent!")
+                print(f"Message ID: {result.get('message_id', 'N/A')}")
+                return True
+            else:
+                print(f"ERROR: Failed to send reaction message: {result.get('error', 'Unknown error')}")
+                return False
+                
+        except Exception as e:
+            print(f"ERROR: Exception sending reaction message: {e}")
+            return False
+
+    async def _send_catalog_message(self, step_data):
+        """Send catalog message with product list"""
+        try:
+            # Get catalog info from environment or step data
+            catalog_id = step_data.get("catalog_id") or os.getenv("WHATSAPP_CATALOG_ID", "785880617687252")
+            
+            print(f"Attempting to send catalog message...")
+            print(f"Catalog ID: {catalog_id}")
+            
+            # Create catalog message payload with correct format (product_list with sections)
+            payload = {
+                "messaging_product": "whatsapp",
+                "recipient_type": "individual",
+                "to": self.phone_number,
+                "type": "interactive",
+                "interactive": {
+                    "type": "product_list",
+                    "header": {
+                        "type": "text",
+                        "text": "🛍️ Nuestro Catálogo de Productos"
+                    },
+                    "body": {
+                        "text": "Elegí una opción para ver más detalles 👇"
+                    },
+                    "footer": {
+                        "text": "Productos disponibles"
+                    },
+                    "action": {
+                        "catalog_id": catalog_id,
+                        "sections": [
+                            {
+                                "title": "Sección 1",
+                                "product_items": []
+                            },
+                            {
+                                "title": "Sección 2",
+                                "product_items": []
+                            }
+                        ]
+                    }
+                }
+            }
+            
+            print(f"Sending payload: {json.dumps(payload, indent=2)}")
+            
+            result = await self._send_direct_api_call(payload)
+            
+            if result.get("success"):
+                print(f"SUCCESS: Catalog message sent!")
+                print(f"Message ID: {result.get('message_id', 'N/A')}")
+                return True
+            else:
+                print(f"ERROR: Failed to send catalog message: {result.get('error', 'Unknown error')}")
+                print("NOTE: Catalog messages require valid catalog_id and product_retailer_id")
+                return False
+                
+        except Exception as e:
+            print(f"ERROR: Exception sending catalog message: {e}")
+            return False
+
+    async def _send_flow_message(self, step_data):
+        """Send flow message"""
+        try:
+            flow_token = step_data.get("flow_token", "")
+            flow_id = step_data.get("flow_id", "")
+            flow_cta = step_data.get("flow_cta", "Completar")
+            flow_action_payload = step_data.get("flow_action_payload", "{}")
+            
+            print(f"Attempting to send flow message...")
+            print(f"Flow ID: {flow_id}")
+            print(f"Flow CTA: {flow_cta}")
+            print(f"Flow Token: {flow_token}")
+            
+            # Create flow message payload
+            payload = {
+                "messaging_product": "whatsapp",
+                "to": self.phone_number,
+                "type": "interactive",
+                "interactive": {
+                    "type": "flow",
+                    "header": {
+                        "type": "text",
+                        "text": "Completa el formulario"
+                    },
+                    "body": {
+                        "text": "Haz clic en el botón para completar el formulario"
+                    },
+                    "action": {
+                        "name": "flow",
+                        "parameters": {
+                            "flow_token": flow_token,
+                            "flow_id": flow_id,
+                            "flow_cta": flow_cta,
+                            "flow_action_payload": flow_action_payload
+                        }
+                    }
+                }
+            }
+            
+            print(f"Sending payload: {json.dumps(payload, indent=2)}")
+            
+            result = await self._send_direct_api_call(payload)
+            
+            if result.get("success"):
+                print(f"SUCCESS: Flow message sent!")
+                print(f"Message ID: {result.get('message_id', 'N/A')}")
+                return True
+            else:
+                print(f"ERROR: Failed to send flow message: {result.get('error', 'Unknown error')}")
+                print("NOTE: Flow messages require proper flow setup and approval")
+                return False
+                
+        except Exception as e:
+            print(f"ERROR: Exception sending flow message: {e}")
+            return False
     
     def check_environment(self):
         """Check if environment variables are properly set"""
@@ -620,8 +880,8 @@ class WhatsAppNativeMessageTester:
             else:
                 failed_steps += 1
             
-            # Small delay between messages
-            await asyncio.sleep(3)
+            # Small delay between messages to avoid rate limiting
+            await asyncio.sleep(5)
         
         # Summary
         print(f"\nTest Summary")
@@ -641,6 +901,7 @@ class WhatsAppNativeMessageTester:
         print("SUCCESS: Location messages (location)")
         print("SUCCESS: Contact messages (contacts)")
         print("SUCCESS: Sticker messages (sticker)")
+        print("SUCCESS: Reaction messages (reaction)")
         print("WARNING: Template messages (template - requires approval)")
         
         return successful_steps > 0

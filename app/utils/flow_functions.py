@@ -124,38 +124,13 @@ def send_order_confirmation(order_id: str, customer_email: str, order_details: D
 def load_products_from_db() -> Dict[str, Any]:
     """Load products from database"""
     try:
-        # Mock products data
-        products = [
-            {
-                "id": "product_1",
-                "name": "Café Premium",
-                "price": 15.99,
-                "description": "Tostado artesanalmente",
-                "category": "coffee",
-                "active": True
-            },
-            {
-                "id": "product_2",
-                "name": "Café Orgánico",
-                "price": 18.99,
-                "description": "Sin pesticidas",
-                "category": "coffee",
-                "active": True
-            },
-            {
-                "id": "product_3",
-                "name": "Café Especial",
-                "price": 22.99,
-                "description": "Origen único",
-                "category": "coffee",
-                "active": True
-            }
-        ]
-        
+        # Return empty list instead of hardcoded data
+        # In production, this should query the actual database
         return {
             "success": True,
-            "products": products,
-            "count": len(products)
+            "products": [],
+            "count": 0,
+            "message": "No hay productos disponibles. Por favor, contacta con soporte para más información."
         }
     except Exception as e:
         logger.error(f"Error loading products: {e}")
@@ -194,22 +169,15 @@ def validate_phone(phone: str) -> Dict[str, Any]:
 def check_inventory(product_id: str, quantity: int) -> Dict[str, Any]:
     """Check product inventory"""
     try:
-        # Mock inventory check
-        inventory = {
-            "product_1": 50,
-            "product_2": 30,
-            "product_3": 20
-        }
-        
-        available = inventory.get(product_id, 0)
-        sufficient = available >= quantity
-        
+        # Return error instead of hardcoded inventory data
+        # In production, this should query the actual inventory system
         return {
-            "available": available,
+            "success": False,
+            "error": "Sistema de inventario no disponible. Por favor, contacta con soporte para verificar disponibilidad.",
+            "available": 0,
             "requested": quantity,
-            "sufficient": sufficient,
-            "product_id": product_id,
-            "message": f"Stock disponible: {available}" if sufficient else f"Stock insuficiente. Disponible: {available}"
+            "sufficient": False,
+            "product_id": product_id
         }
     except Exception as e:
         logger.error(f"Error checking inventory for {product_id}: {e}")
@@ -225,33 +193,18 @@ def check_inventory(product_id: str, quantity: int) -> Dict[str, Any]:
 def calculate_delivery_time(address: str) -> Dict[str, Any]:
     """Calculate delivery time based on address"""
     try:
-        # Mock delivery time calculation
-        # In real implementation, this would use geolocation services
-        
-        delivery_times = {
-            "downtown": 30,
-            "suburbs": 45,
-            "remote": 60
-        }
-        
-        # Simple logic based on address keywords
-        address_lower = address.lower()
-        if "centro" in address_lower or "downtown" in address_lower:
-            estimated_time = delivery_times["downtown"]
-        elif "suburb" in address_lower or "residencial" in address_lower:
-            estimated_time = delivery_times["suburbs"]
-        else:
-            estimated_time = delivery_times["remote"]
-        
+        # Return error instead of hardcoded delivery times
+        # In production, this should use geolocation services
         return {
-            "estimated_minutes": estimated_time,
+            "success": False,
+            "error": "Sistema de cálculo de entrega no disponible. Por favor, contacta con soporte para consultar tiempos de entrega.",
             "address": address,
-            "message": f"Tiempo estimado de entrega: {estimated_time} minutos"
+            "estimated_minutes": 0
         }
     except Exception as e:
         logger.error(f"Error calculating delivery time for {address}: {e}")
         return {
-            "estimated_minutes": 60,
+            "estimated_minutes": 0,
             "address": address,
             "error": str(e)
         }
@@ -284,28 +237,15 @@ def format_order_summary(order_data: Dict[str, Any]) -> str:
 def get_customer_history(customer_email: str) -> Dict[str, Any]:
     """Get customer order history"""
     try:
-        # Mock customer history
-        history = [
-            {
-                "order_id": "ORD-20240101001",
-                "date": "2024-01-01",
-                "total": 25.99,
-                "status": "delivered"
-            },
-            {
-                "order_id": "ORD-20240115002",
-                "date": "2024-01-15",
-                "total": 18.99,
-                "status": "delivered"
-            }
-        ]
-        
+        # Return empty history instead of hardcoded data
+        # In production, this should query the actual customer database
         return {
             "success": True,
             "customer_email": customer_email,
-            "orders": history,
-            "total_orders": len(history),
-            "total_spent": sum(order["total"] for order in history)
+            "orders": [],
+            "total_orders": 0,
+            "total_spent": 0,
+            "message": "No hay historial de pedidos disponible. Por favor, contacta con soporte para más información."
         }
     except Exception as e:
         logger.error(f"Error getting customer history for {customer_email}: {e}")

@@ -79,7 +79,7 @@ def create_flow():
     )
     
     # Set variables
-    .set_variable("company_name", "Mi Empresa")
+    .set_variable("company_name", "{{company_name}}")
     .set_variable("support_hours", "9:00 - 18:00")
     
     # Set error handlers

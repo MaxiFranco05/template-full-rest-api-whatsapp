@@ -81,13 +81,13 @@ def example_professional_flow_usage():
             'name': 'validate_email',
             'module': 'app.utils.flow_functions',
             'function': 'validate_email',
-            'parameters': {'email': 'test@example.com'},
+            'parameters': {'email': 'user@company.com'},
             'timeout': 5,
             'retry_count': 2,
             'error_handler': None,
             'cache_result': False
         })(),
-        {'user_email': 'test@example.com'}
+        {'user_email': 'user@company.com'}
     )
     
     print(f"  Email validation result: {email_result}")
