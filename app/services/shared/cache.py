@@ -1,7 +1,6 @@
 """
 Sistema de Cache con Redis (OPCIONAL)
 """
-import redis
 import json
 from typing import Any, Optional
 from app.core.config import settings
@@ -9,12 +8,20 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Try to import redis, but don't fail if it's not available
+try:
+    import redis
+    REDIS_AVAILABLE = True
+except ImportError:
+    REDIS_AVAILABLE = False
+    logger.warning("Redis not available. Cache will use fallback mode.")
+
 class RedisCache:
     """Clase para manejar cache con Redis"""
     
     def __init__(self):
         self.redis_client = None
-        if settings.REDIS_URL:
+        if REDIS_AVAILABLE and settings.REDIS_URL:
             try:
                 self.redis_client = redis.from_url(settings.REDIS_URL)
                 # Probar conexión
@@ -23,6 +30,8 @@ class RedisCache:
             except Exception as e:
                 logger.warning(f"No se pudo conectar a Redis: {e}")
                 self.redis_client = None
+        else:
+            logger.info("Redis no disponible, usando cache en memoria")
     
     def get(self, key: str) -> Optional[Any]:
         """Obtener valor del cache"""

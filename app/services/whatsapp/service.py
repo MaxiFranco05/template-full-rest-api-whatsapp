@@ -9,10 +9,10 @@ from datetime import datetime
 from app.core.config import settings
 from app.core.logging_config import whatsapp_logger
 from app.core.error_handling import WhatsAppException, handle_errors
-from app.services.message_service import message_service
-from app.services.conversation_service import conversation_manager, ConversationState
-from app.services.whatsapp_persistence_service import get_whatsapp_persistence_service
-from app.services.whatsapp_message_types import create_message_sender, create_message_templates
+from app.services.shared.message import message_service
+from app.services.business.conversation import conversation_manager, ConversationState
+from app.services.whatsapp.persistence import get_whatsapp_persistence_service
+from app.services.whatsapp.message_builder import create_message_sender, create_message_templates
 
 logger = logging.getLogger(__name__)
 

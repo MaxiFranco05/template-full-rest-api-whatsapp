@@ -2,7 +2,7 @@
 Main Flow - Python Version
 Simple main flow that greets differently for first message vs returning users
 """
-from app.services.professional_flow_system import (
+from app.services.flows.executor import (
     create_professional_flow_builder, MessageType, FlowStepType
 )
 

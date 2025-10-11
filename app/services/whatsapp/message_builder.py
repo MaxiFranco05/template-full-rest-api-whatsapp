@@ -6,8 +6,8 @@ from typing import Dict, List, Any, Optional, Union
 from datetime import datetime
 import logging
 
-from app.services.data_config_service import get_data_config
-from app.services.message_validation_service import get_message_validator
+from app.services.shared.config import get_data_config
+from app.services.shared.validation import get_message_validator
 
 logger = logging.getLogger(__name__)
 
@@ -194,18 +194,16 @@ class WhatsAppMessageBuilder:
         }
     
     def catalog_message(self, catalog_id: str, product_sections: List[Dict[str, Any]], 
-                       header_text: str = "🛍️ Nuestro Catálogo de Productos",
-                       body_text: str = "Elegí una opción para ver más detalles 👇",
-                       footer_text: str = "Productos disponibles") -> Dict[str, Any]:
+                       header_text: str = None, body_text: str = None, footer_text: str = None) -> Dict[str, Any]:
         """
         Create a native WhatsApp catalog message with product list
         
         Args:
             catalog_id: WhatsApp catalog ID
             product_sections: List of sections (REQUIRED - no default hardcoded data)
-            header_text: Header text for the message
-            body_text: Body text for the message
-            footer_text: Footer text for the message
+            header_text: Header text for the message (default: "🛍️ Nuestro Catálogo de Productos")
+            body_text: Body text for the message (default: "Elegí una opción para ver más detalles 👇")
+            footer_text: Footer text for the message (default: "Productos disponibles")
         """
         if not product_sections:
             # Return error message instead of hardcoded data
@@ -216,6 +214,11 @@ class WhatsAppMessageBuilder:
                 "type": "text",
                 "text": {"body": "❌ Error: No hay productos disponibles en el catálogo. Por favor, contacta con soporte."}
             }
+        
+        # Set default values if not provided
+        header_text = header_text or "🛍️ Nuestro Catálogo de Productos"
+        body_text = body_text or "Elegí una opción para ver más detalles 👇"
+        footer_text = footer_text or "Productos disponibles"
         
         return {
             "messaging_product": "whatsapp",
@@ -306,13 +309,17 @@ class WhatsAppMessageTemplates:
             "sections": sections
         }
     
-    def native_catalog_message(self, catalog_id: str, product_sections: List[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def native_catalog_message(self, catalog_id: str, product_sections: List[Dict[str, Any]] = None,
+                              header_text: str = None, body_text: str = None, footer_text: str = None) -> Dict[str, Any]:
         """
         Generate native WhatsApp catalog message
         
         Args:
             catalog_id: WhatsApp catalog ID
             product_sections: List of product sections (REQUIRED - no default hardcoded data)
+            header_text: Header text (default: "🛍️ Nuestro Catálogo de Productos")
+            body_text: Body text (default: "Elegí una opción para ver más detalles 👇")
+            footer_text: Footer text (default: "Productos disponibles")
         """
         if product_sections is None or not product_sections:
             return {
@@ -320,13 +327,18 @@ class WhatsAppMessageTemplates:
                 "body": "❌ Error: No hay productos disponibles en el catálogo. Por favor, contacta con soporte."
             }
         
+        # Set default values if not provided
+        header_text = header_text or "🛍️ Nuestro Catálogo de Productos"
+        body_text = body_text or "Elegí una opción para ver más detalles 👇"
+        footer_text = footer_text or "Productos disponibles"
+        
         return {
             "type": "catalog",
             "catalog_id": catalog_id,
             "product_sections": product_sections,
-            "header_text": "🛍️ Nuestro Catálogo de Productos",
-            "body_text": "Elegí una opción para ver más detalles 👇",
-            "footer_text": "Productos disponibles"
+            "header_text": header_text,
+            "body_text": body_text,
+            "footer_text": footer_text
         }
     
     def service_menu_message(self) -> Dict[str, Any]:

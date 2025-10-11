@@ -17,9 +17,9 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 try:
-    from app.services.whatsapp_service import WhatsAppService
-    from app.services.whatsapp_persistence_service import WhatsAppPersistenceService
-    from app.services.whatsapp_flow_service import WhatsAppFlowService
+    from app.services.whatsapp.service import WhatsAppService
+    from app.services.whatsapp.persistence import WhatsAppPersistenceService
+    from app.services.flows.service import WhatsAppFlowService
     from app.db.database import get_db
 except ImportError as e:
     print(f"ERROR: Failed to import app modules: {e}")

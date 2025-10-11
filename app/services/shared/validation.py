@@ -5,7 +5,7 @@ Validates message data availability before sending
 from typing import Dict, Any, Optional
 import logging
 
-from app.services.data_config_service import get_data_config
+from app.services.shared.config import get_data_config
 
 logger = logging.getLogger(__name__)
 

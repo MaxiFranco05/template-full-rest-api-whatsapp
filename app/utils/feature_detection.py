@@ -80,7 +80,7 @@ def get_cache():
     """Obtener instancia de cache (Redis o fallback)"""
     if use_redis():
         try:
-            from app.cache import cache
+            from app.services.shared.cache import cache
             return cache
         except ImportError:
             pass

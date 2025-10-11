@@ -13,11 +13,11 @@ from unittest.mock import Mock, patch, MagicMock
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from app.services.professional_flow_system import (
+from app.services.flows.executor import (
     create_professional_flow_builder, FlowStepType, MessageType, DataSourceType,
     DataSource, FunctionConfig, FlowStep, FlowDefinition, FunctionExecutor, DataSourceManager
 )
-from app.services.professional_unified_flow_loader import create_professional_unified_flow_loader
+from app.services.flows.loader import create_unified_flow_loader
 
 
 class TestProfessionalFlowBuilder:
@@ -376,7 +376,7 @@ class TestProfessionalUnifiedFlowLoader:
     
     def test_create_loader(self):
         """Test creating flow loader"""
-        loader = create_professional_unified_flow_loader("test/flows")
+        loader = create_unified_flow_loader("test/flows")
         assert loader.flows_directory == Path("test/flows")
         assert loader.loaded_flows == {}
     
@@ -401,7 +401,7 @@ class TestProfessionalUnifiedFlowLoader:
         })
         mock_open.return_value.__enter__.return_value = mock_file
         
-        loader = create_professional_unified_flow_loader("test/flows")
+        loader = create_unified_flow_loader("test/flows")
         flow = loader.load_flow_from_file("test")
         
         assert isinstance(flow, FlowDefinition)
@@ -431,7 +431,7 @@ class TestProfessionalUnifiedFlowLoader:
         })
         mock_open.return_value.__enter__.return_value = mock_file
         
-        loader = create_professional_unified_flow_loader("test/flows")
+        loader = create_unified_flow_loader("test/flows")
         flow = loader.load_flow_from_file("test")
         
         assert isinstance(flow, FlowDefinition)
@@ -456,7 +456,7 @@ class TestProfessionalUnifiedFlowLoader:
             }
         )
         
-        loader = create_professional_unified_flow_loader("test/flows")
+        loader = create_unified_flow_loader("test/flows")
         
         # Mock the load_flow_from_file method
         with patch.object(loader, 'load_flow_from_file', return_value=flow):
@@ -485,7 +485,7 @@ class TestProfessionalUnifiedFlowLoader:
             }
         )
         
-        loader = create_professional_unified_flow_loader("test/flows")
+        loader = create_unified_flow_loader("test/flows")
         
         # Mock the load_flow_from_file method
         with patch.object(loader, 'load_flow_from_file', return_value=flow):

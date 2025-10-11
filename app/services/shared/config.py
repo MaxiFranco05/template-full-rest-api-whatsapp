@@ -6,7 +6,7 @@ from typing import Dict, Any, List, Optional
 import logging
 from sqlalchemy.orm import Session
 from app.db.database import get_db
-from app.services.product_service import ProductService
+from app.services.business.product import ProductService
 
 logger = logging.getLogger(__name__)
 

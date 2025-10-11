@@ -68,3 +68,24 @@ def paginate_query(query, page: int = 1, size: int = 10):
         "size": size,
         "pages": pages
     }
+
+
+def format_phone_number(phone: str) -> str:
+    """Format phone number for WhatsApp"""
+    # Remove all non-digit characters
+    digits = re.sub(r'\D', '', phone)
+    
+    # Add country code if missing
+    if not digits.startswith('54') and len(digits) == 10:
+        digits = '54' + digits
+    
+    return '+' + digits
+
+
+def validate_phone_format(phone: str) -> bool:
+    """Validate phone number format"""
+    # Remove all non-digit characters
+    digits = re.sub(r'\D', '', phone)
+    
+    # Check if it's a valid length (10-15 digits)
+    return 10 <= len(digits) <= 15

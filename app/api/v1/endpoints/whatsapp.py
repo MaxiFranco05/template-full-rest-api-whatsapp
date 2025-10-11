@@ -5,8 +5,8 @@ from fastapi import APIRouter, Request, HTTPException, status, Depends, Query
 from fastapi.responses import PlainTextResponse
 from typing import Dict, Any, Optional
 import logging
-from app.services.whatsapp_service import whatsapp_service
-from app.services.conversation_service import conversation_manager
+from app.services.whatsapp.service import whatsapp_service
+from app.services.business.conversation import conversation_manager
 from app.db.database import get_db
 from sqlalchemy.orm import Session
 

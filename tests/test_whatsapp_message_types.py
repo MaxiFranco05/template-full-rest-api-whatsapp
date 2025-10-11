@@ -20,7 +20,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 try:
-    from app.services.whatsapp_service import WhatsAppService
+    from app.services.whatsapp.service import WhatsAppService
 except ImportError as e:
     print(f"ERROR: Failed to import app modules: {e}")
     print(f"Project root: {project_root}")

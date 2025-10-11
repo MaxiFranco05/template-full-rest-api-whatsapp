@@ -17,8 +17,8 @@ load_dotenv()
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from app.services.whatsapp_message_types import WhatsAppMessageBuilder, WhatsAppMessageTemplates
-from app.services.whatsapp_service import WhatsAppService
+from app.services.whatsapp.message_builder import WhatsAppMessageBuilder, WhatsAppMessageTemplates
+from app.services.whatsapp.service import WhatsAppService
 
 async def example_catalog_message():
     """Example of using the new catalog message type"""
@@ -42,36 +42,67 @@ async def example_catalog_message():
         builder.create_product_section("Categoría B", [])
     ]
     
-    # Create catalog message
+    # Create catalog message with custom texts
     catalog_message = builder.catalog_message(
         catalog_id=os.getenv("WHATSAPP_CATALOG_ID", "785880617687252"),
         product_sections=product_sections,
-        header_text="🧊 Catálogo de Productos",
+        header_text="🧊 Catálogo de Productos Congelados",
         body_text="Elegí una opción para ver más detalles 👇",
-        footer_text="Productos disponibles"
+        footer_text="Productos congelados frescos"
     )
     
     print(f"✅ Catalog message created with builder")
     print(f"📦 Catalog ID: {catalog_message['interactive']['action']['catalog_id']}")
     print(f"📋 Sections: {len(catalog_message['interactive']['action']['sections'])}")
     
-    # Example 2: Using templates
+    # Example 2: Using templates with custom texts
     print(f"\n{'='*60}")
-    print(f"📦 EXAMPLE 2: Template Usage")
+    print(f"📦 EXAMPLE 2: Template Usage with Custom Texts")
     print(f"{'='*60}")
     
     template_data = templates.native_catalog_message(
-        catalog_id=os.getenv("WHATSAPP_CATALOG_ID", "785880617687252")
+        catalog_id=os.getenv("WHATSAPP_CATALOG_ID", "785880617687252"),
+        product_sections=[
+            {
+                "title": "Productos Destacados",
+                "product_items": []
+            }
+        ],
+        header_text="🌟 Productos Destacados",
+        body_text="Descubre nuestros productos más populares:",
+        footer_text="¡No te los pierdas!"
     )
     
-    print(f"✅ Catalog template created")
+    print(f"✅ Catalog template created with custom texts")
     print(f"📦 Type: {template_data['type']}")
     print(f"📦 Catalog ID: {template_data['catalog_id']}")
     print(f"📋 Sections: {len(template_data['product_sections'])}")
+    print(f"📝 Header: {template_data['header_text']}")
     
-    # Example 3: Custom product sections
+    # Example 3: Using default values
     print(f"\n{'='*60}")
-    print(f"📦 EXAMPLE 3: Custom Product Sections")
+    print(f"📦 EXAMPLE 3: Using Default Values")
+    print(f"{'='*60}")
+    
+    default_template = templates.native_catalog_message(
+        catalog_id=os.getenv("WHATSAPP_CATALOG_ID", "785880617687252"),
+        product_sections=[
+            {
+                "title": "Categoría por Defecto",
+                "product_items": []
+            }
+        ]
+        # No header_text, body_text, footer_text provided - will use defaults
+    )
+    
+    print(f"✅ Catalog template created with default values")
+    print(f"📝 Header (default): {default_template['header_text']}")
+    print(f"📝 Body (default): {default_template['body_text']}")
+    print(f"📝 Footer (default): {default_template['footer_text']}")
+    
+    # Example 4: Custom product sections
+    print(f"\n{'='*60}")
+    print(f"📦 EXAMPLE 4: Custom Product Sections")
     print(f"{'='*60}")
     
     custom_sections = [
@@ -105,15 +136,15 @@ async def example_catalog_message():
     try:
         whatsapp_service = WhatsAppService()
         
-        # Send the catalog message
+        # Send the catalog message with custom texts
         result = await whatsapp_service.send_message(
             to=phone_number,
             message_type="catalog",
             catalog_id=os.getenv("WHATSAPP_CATALOG_ID", "785880617687252"),
             product_sections=product_sections,
-            header_text="🧊 Catálogo de Productos",
+            header_text="🧊 Catálogo de Productos Congelados",
             body_text="Elegí una opción para ver más detalles 👇",
-            footer_text="Productos disponibles"
+            footer_text="Productos congelados frescos"
         )
         
         if result.get("success"):
@@ -137,12 +168,15 @@ async def example_catalog_message():
     
     print(f"💡 Usage Examples:")
     print(f"  1. builder.catalog_message(catalog_id, sections)")
-    print(f"  2. builder.create_product_section(title, product_ids)")
-    print(f"  3. templates.native_catalog_message(catalog_id)")
-    print(f"  4. whatsapp_service.send_message(type='catalog', ...)")
+    print(f"  2. builder.catalog_message(catalog_id, sections, header='Custom', body='Custom', footer='Custom')")
+    print(f"  3. builder.create_product_section(title, product_ids)")
+    print(f"  4. templates.native_catalog_message(catalog_id, sections)")
+    print(f"  5. templates.native_catalog_message(catalog_id, sections, header='Custom', body='Custom', footer='Custom')")
+    print(f"  6. whatsapp_service.send_message(type='catalog', ...)")
     print(f"\n⚠️  IMPORTANT: No hardcoded data - all product data must be provided!")
     print(f"   - Empty sections will show error messages")
     print(f"   - Real product IDs must be provided for production use")
+    print(f"   - Header, body, and footer texts are optional with sensible defaults")
 
 if __name__ == "__main__":
     asyncio.run(example_catalog_message())

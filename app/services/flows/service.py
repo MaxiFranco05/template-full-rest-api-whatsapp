@@ -2,8 +2,8 @@
 WhatsApp Flow Service
 Service for managing WhatsApp conversation flows using main.json as primary flow
 """
-from app.services.conversation_flow_builder import create_flow_executor
-from app.services.unified_flow_loader import create_unified_flow_loader
+from app.services.flows.builder import create_flow_executor
+from app.services.flows.loader import create_unified_flow_loader
 
 
 class WhatsAppFlowService:

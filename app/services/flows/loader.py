@@ -6,7 +6,7 @@ import json
 import yaml
 from typing import Dict, Any, List, Union
 from pathlib import Path
-from app.services.conversation_flow_builder import (
+from app.services.flows.builder import (
     create_flow_builder, FlowStepType, MessageType
 )
 
