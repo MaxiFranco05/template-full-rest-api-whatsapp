@@ -11,6 +11,7 @@ from app.core.error_handling import register_exception_handlers
 from app.api.v1.api import api_router
 from app.db.database import engine, Base
 import logging
+from datetime import datetime
 
 # Configurar logging
 setup_logging()
@@ -56,6 +57,17 @@ register_exception_handlers(app)
 
 # Incluir routers de API
 app.include_router(api_router, prefix="/api/v1")
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for monitoring"""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "version": settings.APP_VERSION,
+        "environment": "development" if settings.DEBUG else "production"
+    }
 
 
 @app.get("/", response_class=HTMLResponse)

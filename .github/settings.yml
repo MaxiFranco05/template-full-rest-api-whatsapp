@@ -1,0 +1,34 @@
+# GitHub Actions configuration
+# This file contains settings for GitHub Actions workflows
+
+# Enable GitHub Actions
+enabled: true
+
+# Default permissions for workflows
+permissions:
+  contents: read
+  packages: write
+  issues: write
+  pull-requests: write
+  security-events: write
+
+# Environment protection rules
+environments:
+  staging:
+    protection_rules:
+      - type: required_reviewers
+        required_reviewers: 1
+      - type: wait_timer
+        wait_timer: 0
+  production:
+    protection_rules:
+      - type: required_reviewers
+        required_reviewers: 2
+      - type: wait_timer
+        wait_timer: 5
+      - type: required_status_checks
+        required_status_checks:
+          - test
+          - lint
+          - security
+          - docker
