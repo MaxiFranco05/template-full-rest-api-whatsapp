@@ -1,0 +1,35 @@
+# Testing Requirements
+# Dependencies specifically needed for running tests
+
+# Core testing framework
+pytest==8.4.2
+pytest-asyncio==1.2.0
+
+# HTTP client for WhatsApp API tests
+aiohttp==3.13.0
+
+# Environment variables
+python-dotenv==1.1.1
+
+# JWT and authentication testing
+python-jose[cryptography]==3.5.0
+passlib[bcrypt]==1.7.4
+
+# FastAPI testing
+fastapi==0.118.2
+httpx==0.28.1
+
+# Database testing
+sqlalchemy==2.0.43
+
+# Data validation
+pydantic==2.12.0
+
+# YAML support for flow definitions
+PyYAML==6.0.3
+
+# Email validation
+email-validator==2.3.0
+
+# Additional testing utilities
+requests==2.32.5

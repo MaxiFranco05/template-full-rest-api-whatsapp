@@ -1,0 +1,42 @@
+# Testing Dependencies for Business API Template
+# Install with: pip install -r requirements-testing.txt
+
+# Core testing framework
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.0.0
+
+# Mocking and test utilities
+pytest-mock>=3.10.0
+factory-boy>=3.2.0
+
+# Data validation and serialization
+PyYAML>=6.0
+jsonschema>=4.0.0
+
+# Environment management
+python-dotenv>=1.0.0
+
+# HTTP testing (for API tests)
+httpx>=0.24.0
+requests>=2.28.0
+
+# Database testing
+sqlalchemy-utils>=0.41.0
+
+# Async testing support
+asyncio-mock>=0.1.0
+
+# Code coverage
+coverage>=7.0.0
+
+# Test reporting
+pytest-html>=3.1.0
+pytest-json-report>=1.5.0
+
+# Performance testing (optional)
+pytest-benchmark>=4.0.0
+
+# Security testing (optional)
+bandit>=1.7.0
+safety>=2.3.0

@@ -43,18 +43,18 @@ class UnifiedFlowLoader:
             flow_name = flow_file.stem
             try:
                 flows[flow_name] = self._load_from_json(flow_file)
-                print(f"✅ JSON flow loaded: {flow_name}")
+                print(f"SUCCESS: JSON flow loaded: {flow_name}")
             except Exception as e:
-                print(f"❌ Error loading JSON flow {flow_name}: {e}")
+                print(f"ERROR: Error loading JSON flow {flow_name}: {e}")
         
         # Load YAML files
         for flow_file in self.flows_directory.glob("*.yaml"):
             flow_name = flow_file.stem
             try:
                 flows[flow_name] = self._load_from_yaml(flow_file)
-                print(f"✅ YAML flow loaded: {flow_name}")
+                print(f"SUCCESS: YAML flow loaded: {flow_name}")
             except Exception as e:
-                print(f"❌ Error loading YAML flow {flow_name}: {e}")
+                print(f"ERROR: Error loading YAML flow {flow_name}: {e}")
         
         return flows
     

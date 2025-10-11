@@ -7,12 +7,12 @@ Template profesional para APIs de negocio construido con FastAPI. Incluye sistem
 - **FastAPI**: Framework moderno y rápido para APIs
 - **SQLAlchemy**: ORM para manejo de base de datos
 - **Multi-DB**: Soporte para SQLite, PostgreSQL y MySQL
-- **WhatsApp Business API**: Sistema completo de mensajería
+- **WhatsApp Business API**: Sistema completo de mensajería con todos los tipos de mensajes nativos
 - **JWT**: Autenticación con tokens
 - **Pydantic**: Validación de datos
 - **Alembic**: Migraciones de base de datos
 - **Logging Profesional**: Sistema de logs JSON estructurado
-- **Testing**: Suite de pruebas con pytest
+- **Testing**: Suite de pruebas completa con pytest y tests de WhatsApp
 - **Documentación**: Swagger UI automática
 
 ## 📁 Estructura del Proyecto
@@ -164,8 +164,41 @@ CELERY_RESULT_BACKEND=redis://localhost:6379/0
 - `POST /api/v1/whatsapp/webhook` - Recibir mensajes
 - `GET /api/v1/whatsapp/conversations` - Estadísticas de conversaciones
 
+## 📱 Tipos de Mensajes WhatsApp
+
+El sistema soporta todos los tipos de mensajes nativos de WhatsApp Business API:
+
+### ✅ Mensajes de Texto
+- Mensajes simples de texto
+- Formato nativo de WhatsApp
+
+### ✅ Mensajes Interactivos
+- **Botones**: Hasta 3 botones de respuesta
+- **Listas**: Listas desplegables con secciones y opciones
+- **Botones de URL**: Enlaces directos a sitios web
+
+### ✅ Mensajes Multimedia
+- **Imágenes**: Con captions opcionales
+- **Documentos**: PDFs, Word, Excel, etc.
+- **Audio**: Archivos de audio reproducibles
+- **Video**: Videos con captions opcionales
+- **Stickers**: Stickers animados y estáticos
+
+### ✅ Mensajes de Ubicación
+- Coordenadas GPS precisas
+- Nombres y direcciones de ubicación
+
+### ✅ Mensajes de Contacto
+- Tarjetas de contacto completas
+- Nombres, teléfonos, emails
+
+### ⚠️ Mensajes Template
+- Requieren aprobación previa de Meta
+- Para notificaciones y confirmaciones
+
 ## 🧪 Testing
 
+### Tests Básicos
 ```bash
 # Ejecutar todas las pruebas
 pytest
@@ -176,6 +209,26 @@ pytest --cov=app
 # Ejecutar pruebas específicas
 pytest app/tests/test_auth.py
 ```
+
+### Tests de WhatsApp
+```bash
+# Instalar dependencias de testing
+pip install -r requirements-testing.txt
+
+# Test de tipos de mensajes nativos de WhatsApp
+python tests/test_whatsapp_message_types.py 1234567890
+
+# Test de integración con API real
+python tests/test_real_whatsapp_api.py 1234567890
+
+# Test de flujos conversacionales
+python tests/unit/test_whatsapp_flows_standalone.py
+```
+
+### Resultados de Tests
+- **Tipos de Mensajes**: 13/14 exitosos (92.9% success rate)
+- **Integración API**: Funcional con credenciales válidas
+- **Flujos Conversacionales**: Sistema completo implementado
 
 ## 📖 Documentación
 

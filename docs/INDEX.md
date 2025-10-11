@@ -49,6 +49,13 @@
    - Configuración gradual
    - Troubleshooting
 
+6. **[TESTING.md](TESTING.md)** - Guía Completa de Testing
+   - Tests de tipos de mensajes WhatsApp
+   - Tests de integración API
+   - Tests de flujos conversacionales
+   - Configuración de entorno de testing
+   - Resultados y métricas
+
 ## 🚀 Inicio Rápido
 
 ### Instalación
