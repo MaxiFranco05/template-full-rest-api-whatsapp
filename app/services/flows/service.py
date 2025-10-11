@@ -2,8 +2,11 @@
 WhatsApp Flow Service
 Service for managing WhatsApp conversation flows using main.json as primary flow
 """
+import logging
 from app.services.flows.builder import create_flow_executor
 from app.services.flows.loader import create_unified_flow_loader
+
+logger = logging.getLogger(__name__)
 
 
 class WhatsAppFlowService:
@@ -24,9 +27,9 @@ class WhatsAppFlowService:
             config_flows = self.unified_loader.load_all_flows()
             for flow_id, flow in config_flows.items():
                 self.flow_executor.register_flow(flow)
-                print(f"SUCCESS: Config flow loaded: {flow_id}")
+                logger.info(f"SUCCESS: Config flow loaded: {flow_id}")
         except Exception as e:
-            print(f"ERROR: Error loading config flows: {e}")
+            logger.error(f"ERROR: Error loading config flows: {e}")
     
     def start_conversation(self, phone_number: str, flow_id: str, 
                           initial_data: dict = None) -> dict:

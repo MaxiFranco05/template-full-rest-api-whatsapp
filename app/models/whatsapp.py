@@ -1,0 +1,63 @@
+"""
+Modelos relacionados con WhatsApp
+"""
+from sqlalchemy import Column, String, Integer, DateTime, Boolean, Text, JSON, ForeignKey
+from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
+from .base import BaseModel
+
+
+class WhatsAppUser(BaseModel):
+    """Modelo de usuario de WhatsApp"""
+    __tablename__ = "whatsapp_users"
+    
+    phone_number = Column(String(20), unique=True, index=True, nullable=False)
+    name = Column(String(255), nullable=True)
+    profile_name = Column(String(255), nullable=True)
+    is_business = Column(Boolean, default=False)
+    first_message_at = Column(DateTime(timezone=True), nullable=True)
+    last_message_at = Column(DateTime(timezone=True), nullable=True)
+    message_count = Column(Integer, default=0)
+    is_blocked = Column(Boolean, default=False)
+    user_metadata = Column(JSON, nullable=True)  # Datos adicionales del usuario
+    
+    # Relación con conversaciones
+    conversations = relationship("WhatsAppConversation", back_populates="user")
+
+
+class WhatsAppConversation(BaseModel):
+    """Modelo de conversación de WhatsApp"""
+    __tablename__ = "whatsapp_conversations"
+    
+    user_id = Column(Integer, ForeignKey("whatsapp_users.id"), nullable=False)
+    conversation_id = Column(String(100), unique=True, index=True, nullable=False)
+    current_state = Column(String(50), default="initial")
+    message_count = Column(Integer, default=0)
+    started_at = Column(DateTime(timezone=True), server_default=func.now())
+    last_activity_at = Column(DateTime(timezone=True), server_default=func.now())
+    ended_at = Column(DateTime(timezone=True), nullable=True)
+    context = Column(JSON, nullable=True)  # Contexto de la conversación
+    
+    # Relación con usuario
+    user = relationship("WhatsAppUser", back_populates="conversations")
+    
+    # Relación con mensajes
+    messages = relationship("WhatsAppMessage", back_populates="conversation")
+
+
+class WhatsAppMessage(BaseModel):
+    """Modelo de mensaje de WhatsApp"""
+    __tablename__ = "whatsapp_messages"
+    
+    conversation_id = Column(Integer, ForeignKey("whatsapp_conversations.id"), nullable=False)
+    message_id = Column(String(100), unique=True, index=True, nullable=False)
+    direction = Column(String(10), nullable=False)  # 'inbound' o 'outbound'
+    message_type = Column(String(20), nullable=False)  # 'text', 'image', 'audio', etc.
+    content = Column(Text, nullable=True)
+    media_url = Column(String(500), nullable=True)
+    timestamp = Column(DateTime(timezone=True), nullable=False)
+    status = Column(String(20), default="sent")  # 'sent', 'delivered', 'read', 'failed'
+    message_metadata = Column(JSON, nullable=True)  # Datos adicionales del mensaje
+    
+    # Relación con conversación
+    conversation = relationship("WhatsAppConversation", back_populates="messages")

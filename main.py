@@ -9,8 +9,7 @@ from app.core.config import settings
 from app.core.logging_config import setup_logging
 from app.core.error_handling import register_exception_handlers
 from app.api.v1.api import api_router
-from app.db.database import engine
-from app.models import Base
+from app.db.database import engine, Base
 import logging
 
 # Configurar logging

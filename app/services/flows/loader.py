@@ -43,18 +43,18 @@ class UnifiedFlowLoader:
             flow_name = flow_file.stem
             try:
                 flows[flow_name] = self._load_from_json(flow_file)
-                print(f"SUCCESS: JSON flow loaded: {flow_name}")
+                logger.info(f"SUCCESS: JSON flow loaded: {flow_name}")
             except Exception as e:
-                print(f"ERROR: Error loading JSON flow {flow_name}: {e}")
+                logger.error(f"ERROR: Error loading JSON flow {flow_name}: {e}")
         
         # Load YAML files
         for flow_file in self.flows_directory.glob("*.yaml"):
             flow_name = flow_file.stem
             try:
                 flows[flow_name] = self._load_from_yaml(flow_file)
-                print(f"SUCCESS: YAML flow loaded: {flow_name}")
+                logger.info(f"SUCCESS: YAML flow loaded: {flow_name}")
             except Exception as e:
-                print(f"ERROR: Error loading YAML flow {flow_name}: {e}")
+                logger.error(f"ERROR: Error loading YAML flow {flow_name}: {e}")
         
         return flows
     
@@ -167,7 +167,7 @@ class UnifiedFlowLoader:
         with open(json_path, 'w', encoding='utf-8') as file:
             json.dump(yaml_config, file, indent=2, ensure_ascii=False)
         
-        print(f"✅ Converted {yaml_file}.yaml to {output_file}.json")
+        logger.info(f"✅ Converted {yaml_file}.yaml to {output_file}.json")
         return json_path
     
     def convert_json_to_yaml(self, json_file: str, output_file: str = None):
@@ -188,7 +188,7 @@ class UnifiedFlowLoader:
         with open(yaml_path, 'w', encoding='utf-8') as file:
             yaml.dump(json_config, file, default_flow_style=False, allow_unicode=True)
         
-        print(f"✅ Converted {json_file}.json to {output_file}.yaml")
+        logger.info(f"✅ Converted {json_file}.json to {output_file}.yaml")
         return yaml_path
     
     def validate_flow_file(self, flow_file: str) -> Dict[str, Any]:
@@ -277,41 +277,4 @@ def create_unified_flow_loader(flows_directory: str = "app/flows") -> UnifiedFlo
     return UnifiedFlowLoader(flows_directory)
 
 
-# Example usage
-def example_usage():
-    """Example of how to use the unified flow loader"""
-    
-    # Create loader
-    loader = create_unified_flow_loader("app/flows")
-    
-    # Load all flows
-    print("🔄 Loading all flows...")
-    flows = loader.load_all_flows()
-    
-    print(f"\n📊 Loaded {len(flows)} flows:")
-    for flow_id, flow in flows.items():
-        print(f"  - {flow_id}: {flow.name} ({len(flow.steps)} steps)")
-    
-    # Validate flows
-    print("\n🔍 Validating flows...")
-    for flow_id in flows.keys():
-        validation = loader.validate_flow_file(flow_id)
-        status = "✅" if validation["valid"] else "❌"
-        print(f"  {status} {flow_id}: {validation['steps_count']} steps")
-        if not validation["valid"]:
-            for issue in validation["issues"]:
-                print(f"    ⚠️ {issue}")
-    
-    # Get detailed info
-    print("\n📋 Flow details:")
-    for flow_id in flows.keys():
-        info = loader.get_flow_info(flow_id)
-        print(f"\n  {flow_id}:")
-        print(f"    Name: {info['name']}")
-        print(f"    Steps: {info['steps_count']}")
-        print(f"    Variables: {list(info['variables'].keys())}")
-        print(f"    Error handlers: {list(info['error_handlers'].keys())}")
-
-
-if __name__ == "__main__":
-    example_usage()
+# Example usage removed for production
