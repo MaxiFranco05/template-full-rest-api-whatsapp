@@ -9,7 +9,6 @@ from datetime import datetime
 from app.core.config import settings
 from app.core.logging_config import whatsapp_logger
 from app.core.error_handling import WhatsAppException, handle_errors
-from app.services.shared.message import message_service
 from app.services.business.conversation import conversation_manager, ConversationState
 from app.services.whatsapp.persistence import get_whatsapp_persistence_service
 from app.services.whatsapp.message_builder import create_message_sender, create_message_templates
@@ -356,25 +355,25 @@ class WhatsAppService:
             
             else:
                 # Default text response
-                default_message = message_service.get_confirmation_message("received")
+                default_message = "Gracias por tu mensaje. Lo procesaré pronto."
                 result = self.message_sender.send_text(phone_number, default_message)
                 return result
                 
         except Exception as e:
             logger.error(f"Error sending interactive response: {e}")
             # Fallback to simple text
-            fallback_message = message_service.get_confirmation_message("received")
+            fallback_message = "Gracias por tu mensaje. Lo procesaré pronto."
             return self.message_sender.send_text(phone_number, fallback_message)
     
     async def process_incoming_message(self, message_data: Dict[str, Any], db_session=None) -> Dict[str, Any]:
-        """Process incoming WhatsApp message and generate response"""
+        """Process incoming WhatsApp message using active flow system"""
         try:
             # Log de desarrollo: mostrar JSON completo del mensaje
             if settings.DEBUG:
                 logger.info(f"[DESARROLLO] Mensaje recibido completo: {json.dumps(message_data, indent=2, ensure_ascii=False, default=str)}")
             
             from_number = message_data.get("from")
-            content = message_data.get("content", "").lower().strip()
+            content = message_data.get("content", "").strip()
             contact_info = message_data.get("contact_info", {})
             
             # Obtener servicio de persistencia
@@ -383,33 +382,19 @@ class WhatsAppService:
             # Obtener o crear usuario en base de datos
             user = persistence_service.get_or_create_user(from_number, contact_info)
             
-            # Obtener o crear conversación en memoria (para máquina de estados)
-            conversation = conversation_manager.get_or_create_conversation(from_number)
-            
             # Obtener o crear conversación en base de datos
             db_conversation = persistence_service.get_or_create_conversation(
                 user_id=user.id,
-                conversation_id=conversation.conversation_id,
-                initial_state=conversation.state
+                conversation_id=f"{from_number}_flow_conversation",
+                initial_state="initial"
             )
-            
-            # Log de desarrollo: mostrar estado de la conversación
-            if settings.DEBUG:
-                logger.info(f"[DESARROLLO] Estado de conversación - ID: {conversation.conversation_id}")
-                logger.info(f"[DESARROLLO] Estado de conversación - Estado actual: {conversation.state}")
-                logger.info(f"[DESARROLLO] Estado de conversación - Contador de mensajes: {conversation.message_count}")
-                logger.info(f"[DESARROLLO] Estado de conversación - Usuario nuevo: {conversation.is_new_user}")
-                logger.info(f"[DESARROLLO] Estado de conversación - Datos del usuario: {json.dumps(conversation.user_data, indent=2, ensure_ascii=False, default=str)}")
-            
-            # Determinar si es usuario nuevo
-            is_new_user = conversation.message_count == 0
             
             # Guardar mensaje entrante en base de datos
             inbound_message_data = {
                 'message_id': message_data.get('message_id'),
                 'direction': 'inbound',
                 'message_type': message_data.get('message_type', 'text'),
-                'content': message_data.get('content'),
+                'content': content,
                 'media_url': message_data.get('media_url'),
                 'timestamp': message_data.get('timestamp'),
                 'status': 'received',
@@ -421,30 +406,89 @@ class WhatsAppService:
             
             saved_message = persistence_service.save_message(db_conversation.id, inbound_message_data)
             
-            # Procesar según el estado actual
-            if conversation.state == "initial":
-                # Log de desarrollo: mostrar procesamiento de mensaje inicial
+            # Usar el sistema de flows para procesar el mensaje
+            from app.services.flows.service import WhatsAppFlowService
+            
+            flow_service = WhatsAppFlowService(self, persistence_service)
+            
+            # Procesar mensaje con el flow activo
+            result = flow_service.process_message(from_number, content)
+            
+            if result.get("success"):
+                # Log de desarrollo: mostrar resultado del flow
                 if settings.DEBUG:
-                    logger.info(f"[DESARROLLO] Procesando mensaje inicial - Contenido: '{content}'")
-                    logger.info(f"[DESARROLLO] Procesando mensaje inicial - Información de contacto: {json.dumps(contact_info, indent=2, ensure_ascii=False, default=str)}")
+                    logger.info(f"[DESARROLLO] Flow procesado exitosamente: {json.dumps(result, indent=2, ensure_ascii=False, default=str)}")
                 
+                # Si el flow envió una respuesta, guardarla en base de datos
+                if result.get("whatsapp_result") and result["whatsapp_result"].get("success"):
+                    outbound_message_data = {
+                        'message_id': result["whatsapp_result"].get('message_id'),
+                        'direction': 'outbound',
+                        'message_type': 'text',
+                        'content': result.get("message", "Flow response"),
+                        'timestamp': datetime.utcnow(),
+                        'status': 'sent',
+                        'metadata': {
+                            'message_type': 'flow_response',
+                            'flow_result': result
+                        }
+                    }
+                    
+                    persistence_service.save_message(db_conversation.id, outbound_message_data)
+                
+                return {
+                    "success": True,
+                    "response_sent": result.get("whatsapp_result", {}).get("success", False),
+                    "message": result.get("message", "Flow processed"),
+                    "conversation_state": result.get("conversation_state", "active"),
+                    "user_id": user.id,
+                    "conversation_id": db_conversation.id,
+                    "flow_result": result
+                }
+            else:
+                # Si el flow falló, usar lógica de fallback
+                logger.warning(f"Flow processing failed: {result.get('error')}")
+                return await self._fallback_message_processing(message_data, db_session, user, db_conversation, persistence_service)
+                    
+        except Exception as e:
+            logger.error(f"Error procesando mensaje entrante: {e}")
+            # Log de desarrollo: mostrar error detallado del procesamiento
+            if settings.DEBUG:
+                logger.error(f"[DESARROLLO] Error procesando mensaje - Datos del mensaje: {json.dumps(message_data, indent=2, ensure_ascii=False, default=str)}")
+                logger.error(f"[DESARROLLO] Error procesando mensaje - Excepción completa: {str(e)}")
+                logger.error(f"[DESARROLLO] Error procesando mensaje - Tipo de excepción: {type(e).__name__}")
+                logger.error(f"[DESARROLLO] Error procesando mensaje - Traceback: {e.__traceback__}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
+    
+    async def _fallback_message_processing(self, message_data: Dict[str, Any], db_session, user, db_conversation, persistence_service) -> Dict[str, Any]:
+        """Fallback message processing when flow system fails"""
+        try:
+            from_number = message_data.get("from")
+            content = message_data.get("content", "").lower().strip()
+            contact_info = message_data.get("contact_info", {})
+            
+            # Obtener o crear conversación en memoria (para máquina de estados)
+            conversation = conversation_manager.get_or_create_conversation(from_number)
+            
+            # Determinar si es usuario nuevo
+            is_new_user = conversation.message_count == 0
+            
+            # Log de desarrollo: mostrar procesamiento de fallback
+            if settings.DEBUG:
+                logger.info(f"[DESARROLLO] Usando procesamiento de fallback - Usuario nuevo: {is_new_user}")
+                logger.info(f"[DESARROLLO] Estado de conversación: {conversation.state}")
+            
+            if conversation.state == "initial":
                 # Primer mensaje - enviar bienvenida
                 conversation.receive_first_message({
                     "user_data": contact_info,
                     "content": content
                 })
                 
-                welcome_message = message_service.get_welcome_message(
-                    is_new_user=is_new_user,
-                    user_name=contact_info.get("name", ""),
-                    company_name="Cafe API"
-                )
-                
-                # Log de desarrollo: mostrar mensaje de bienvenida generado
-                if settings.DEBUG:
-                    logger.info(f"[DESARROLLO] Mensaje de bienvenida generado: '{welcome_message}'")
-                    logger.info(f"[DESARROLLO] Mensaje de bienvenida - Usuario nuevo: {is_new_user}")
-                    logger.info(f"[DESARROLLO] Mensaje de bienvenida - Nombre del usuario: '{contact_info.get('name', '')}'")
+                welcome_message = "¡Hola! Bienvenido/a. ¿En qué puedo ayudarte?"
                 
                 # Enviar mensaje de bienvenida
                 send_result = await self.send_message(from_number, welcome_message)
@@ -459,7 +503,7 @@ class WhatsAppService:
                         'timestamp': datetime.utcnow(),
                         'status': 'sent',
                         'metadata': {
-                            'message_type': 'welcome',
+                            'message_type': 'welcome_fallback',
                             'is_new_user': is_new_user,
                             'user_name': contact_info.get('name', '')
                         }
@@ -481,22 +525,17 @@ class WhatsAppService:
                         "message": welcome_message,
                         "conversation_state": conversation.state,
                         "user_id": user.id,
-                        "conversation_id": db_conversation.id
+                        "conversation_id": db_conversation.id,
+                        "fallback_used": True
                     }
                 else:
                     return {
                         "success": False,
-                        "error": "Error enviando mensaje de bienvenida",
+                        "error": "Error enviando mensaje de bienvenida de fallback",
                         "details": send_result
                     }
             
             else:
-                # Log de desarrollo: mostrar procesamiento de mensaje de usuario existente
-                if settings.DEBUG:
-                    logger.info(f"[DESARROLLO] Procesando mensaje de usuario existente - Contenido: '{content}'")
-                    logger.info(f"[DESARROLLO] Procesando mensaje de usuario existente - Estado actual: {conversation.state}")
-                    logger.info(f"[DESARROLLO] Procesando mensaje de usuario existente - Contador de mensajes: {conversation.message_count}")
-                
                 # Usuario existente - procesar mensaje
                 conversation.receive_message({
                     "user_data": contact_info,
@@ -504,11 +543,7 @@ class WhatsAppService:
                 })
                 
                 # Por ahora, solo confirmamos que recibimos el mensaje
-                confirmation_message = message_service.get_confirmation_message("received")
-                
-                # Log de desarrollo: mostrar mensaje de confirmación generado
-                if settings.DEBUG:
-                    logger.info(f"[DESARROLLO] Mensaje de confirmación generado: '{confirmation_message}'")
+                confirmation_message = "Gracias por tu mensaje. Lo procesaré pronto."
                 
                 send_result = await self.send_message(from_number, confirmation_message)
                 
@@ -522,7 +557,7 @@ class WhatsAppService:
                         'timestamp': datetime.utcnow(),
                         'status': 'sent',
                         'metadata': {
-                            'message_type': 'confirmation',
+                            'message_type': 'confirmation_fallback',
                             'user_state': conversation.state
                         }
                     }
@@ -543,26 +578,21 @@ class WhatsAppService:
                         "message": confirmation_message,
                         "conversation_state": conversation.state,
                         "user_id": user.id,
-                        "conversation_id": db_conversation.id
+                        "conversation_id": db_conversation.id,
+                        "fallback_used": True
                     }
                 else:
                     return {
                         "success": False,
-                        "error": "Error enviando confirmación",
+                        "error": "Error enviando confirmación de fallback",
                         "details": send_result
                     }
                     
         except Exception as e:
-            logger.error(f"Error procesando mensaje entrante: {e}")
-            # Log de desarrollo: mostrar error detallado del procesamiento
-            if settings.DEBUG:
-                logger.error(f"[DESARROLLO] Error procesando mensaje - Datos del mensaje: {json.dumps(message_data, indent=2, ensure_ascii=False, default=str)}")
-                logger.error(f"[DESARROLLO] Error procesando mensaje - Excepción completa: {str(e)}")
-                logger.error(f"[DESARROLLO] Error procesando mensaje - Tipo de excepción: {type(e).__name__}")
-                logger.error(f"[DESARROLLO] Error procesando mensaje - Traceback: {e.__traceback__}")
+            logger.error(f"Error en procesamiento de fallback: {e}")
             return {
                 "success": False,
-                "error": str(e)
+                "error": f"Error en fallback: {str(e)}"
             }
 
 

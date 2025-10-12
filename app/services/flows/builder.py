@@ -295,7 +295,7 @@ class FlowExecutor:
         phone_number = state["phone_number"]
         
         if step.type == FlowStepType.MESSAGE:
-            return self._execute_message_step(phone_number, step)
+            return self._execute_message_step(conversation_id, step)
         
         elif step.type == FlowStepType.QUESTION:
             return self._execute_question_step(phone_number, step, user_input)
@@ -318,24 +318,30 @@ class FlowExecutor:
         else:
             raise ValueError(f"Unknown step type: {step.type}")
     
-    def _execute_message_step(self, phone_number: str, step: FlowStep) -> Dict[str, Any]:
+    def _execute_message_step(self, conversation_id: str, step: FlowStep) -> Dict[str, Any]:
         """Execute a message step"""
+        state = self.conversation_states[conversation_id]
+        phone_number = state["phone_number"]
+        
+        # Process template variables
+        message = self._process_template(step.message, state["variables"])
+        
         # Send message using WhatsApp service
         if step.message_type == MessageType.TEXT:
-            result = self.whatsapp_service.message_sender.send_text(phone_number, step.message)
+            result = self.whatsapp_service.message_sender.send_text(phone_number, message)
         elif step.message_type == MessageType.BUTTONS:
             buttons = [{"id": opt["id"], "title": opt["title"]} for opt in step.options]
-            result = self.whatsapp_service.message_sender.send_buttons(phone_number, step.message, buttons)
+            result = self.whatsapp_service.message_sender.send_buttons(phone_number, message, buttons)
         elif step.message_type == MessageType.LIST:
             sections = [{"title": "Opciones", "rows": step.options}]
             button_text = step.metadata.get("button_text", "Ver opciones")
-            result = self.whatsapp_service.message_sender.send_list(phone_number, step.message, button_text, sections)
+            result = self.whatsapp_service.message_sender.send_list(phone_number, message, button_text, sections)
         else:
-            result = self.whatsapp_service.message_sender.send_text(phone_number, step.message)
+            result = self.whatsapp_service.message_sender.send_text(phone_number, message)
         
         # Move to next step if defined
         if step.next_step:
-            self.conversation_states[phone_number]["current_step"] = step.next_step
+            state["current_step"] = step.next_step
         
         return {
             "success": True,
@@ -344,6 +350,17 @@ class FlowExecutor:
             "next_step": step.next_step,
             "whatsapp_result": result
         }
+    
+    def _process_template(self, template: str, variables: Dict[str, Any]) -> str:
+        """Process template variables in message"""
+        import re
+        logger.info(f"Processing template: '{template}' with variables: {variables}")
+        processed_message = template
+        for key, value in variables.items():
+            placeholder = r"{{" + re.escape(key) + r"}}"
+            processed_message = re.sub(placeholder, str(value), processed_message)
+        logger.info(f"Processed message: '{processed_message}'")
+        return processed_message
     
     def _execute_question_step(self, phone_number: str, step: FlowStep, 
                               user_input: str = None) -> Dict[str, Any]:

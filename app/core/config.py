@@ -59,9 +59,6 @@ class Settings(BaseSettings):
     WHATSAPP_USER_ID: str = ""
     WHATSAPP_CATALOG_ID: str = ""
     
-    # Sistema de mensajes
-    MESSAGES_FILE_PATH: str = "app/data/messages.yaml"
-    
     # Base de datos (SQLite por defecto, pero configurable)
     DATABASE_TYPE: str = "sqlite"  # sqlite, postgresql, mysql
     SQLITE_DATABASE_URL: str = "sqlite:///./business_api.db"

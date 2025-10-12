@@ -4,11 +4,14 @@ Support for both JSON and YAML flow configurations
 """
 import json
 import yaml
+import logging
 from typing import Dict, Any, List, Union
 from pathlib import Path
 from app.services.flows.builder import (
     create_flow_builder, FlowStepType, MessageType
 )
+
+logger = logging.getLogger(__name__)
 
 
 class UnifiedFlowLoader:
@@ -38,18 +41,24 @@ class UnifiedFlowLoader:
         
         flows = {}
         
-        # Load JSON files
+        # Load JSON files (exclude config files)
         for flow_file in self.flows_directory.glob("*.json"):
             flow_name = flow_file.stem
+            # Skip configuration files
+            if flow_name in ['active_flow']:
+                continue
             try:
                 flows[flow_name] = self._load_from_json(flow_file)
                 logger.info(f"SUCCESS: JSON flow loaded: {flow_name}")
             except Exception as e:
                 logger.error(f"ERROR: Error loading JSON flow {flow_name}: {e}")
         
-        # Load YAML files
+        # Load YAML files (exclude config files)
         for flow_file in self.flows_directory.glob("*.yaml"):
             flow_name = flow_file.stem
+            # Skip configuration files
+            if flow_name in ['active_flow']:
+                continue
             try:
                 flows[flow_name] = self._load_from_yaml(flow_file)
                 logger.info(f"SUCCESS: YAML flow loaded: {flow_name}")

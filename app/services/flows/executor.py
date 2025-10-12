@@ -1,496 +1,322 @@
 """
-Professional Conversation Flow System
-Complete system supporting Python, JSON, YAML with function execution and error handling
+Flow Executor
+Handles the execution of conversation flows
 """
-import json
-import yaml
-import importlib
-import inspect
-from typing import Dict, Any, List, Optional, Callable, Union
-from dataclasses import dataclass, field
-from enum import Enum
 import logging
+from typing import Dict, Any, Optional
 from datetime import datetime
-from pathlib import Path
+from app.services.flows.builder import FlowDefinition, FlowStep, FlowStepType
 
 logger = logging.getLogger(__name__)
 
 
-class FlowStepType(Enum):
-    """Types of flow steps"""
-    MESSAGE = "message"
-    QUESTION = "question"
-    CHOICE = "choice"
-    INPUT = "input"
-    CONDITION = "condition"
-    ACTION = "action"
-    FUNCTION = "function"
-    WAIT = "wait"
-    END = "end"
-
-
-class MessageType(Enum):
-    """Types of WhatsApp messages"""
-    TEXT = "text"
-    BUTTONS = "buttons"
-    LIST = "list"
-    MEDIA = "media"
-    LOCATION = "location"
-    CONTACT = "contact"
-    STICKER = "sticker"
-    TEMPLATE = "template"
-
-
-class DataSourceType(Enum):
-    """Types of data sources"""
-    DATABASE = "database"
-    API = "api"
-    FILE = "file"
-    MEMORY = "memory"
-    CACHE = "cache"
-    STATIC = "static"
-
-
-@dataclass
-class DataSource:
-    """Data source configuration"""
-    name: str
-    type: DataSourceType
-    config: Dict[str, Any]
-    cache_ttl: Optional[int] = None
-    retry_count: int = 3
-    timeout: int = 30
-
-
-@dataclass
-class FunctionConfig:
-    """Function execution configuration"""
-    name: str
-    module: str
-    function: str
-    parameters: Dict[str, Any] = field(default_factory=dict)
-    timeout: int = 30
-    retry_count: int = 3
-    error_handler: Optional[str] = None
-    cache_result: bool = False
-    cache_ttl: int = 300
-
-
-@dataclass
-class FlowStep:
-    """Represents a step in the conversation flow"""
-    id: str
-    type: FlowStepType
-    name: str
-    message: Optional[str] = None
-    message_type: MessageType = MessageType.TEXT
-    options: List[Dict[str, str]] = field(default_factory=list)
-    validation: Optional[Dict[str, Any]] = None
-    next_step: Optional[str] = None
-    conditions: List[Dict[str, Any]] = field(default_factory=list)
-    actions: List[str] = field(default_factory=list)
-    functions: List[FunctionConfig] = field(default_factory=list)
-    data_sources: List[DataSource] = field(default_factory=list)
-    timeout: Optional[int] = None
-    retry_count: int = 3
-    error_handler: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass
-class FlowDefinition:
-    """Represents a complete conversation flow"""
-    id: str
-    name: str
-    description: str
-    start_step: str
-    steps: Dict[str, FlowStep] = field(default_factory=dict)
-    variables: Dict[str, Any] = field(default_factory=dict)
-    data_sources: Dict[str, DataSource] = field(default_factory=dict)
-    functions: Dict[str, FunctionConfig] = field(default_factory=dict)
-    error_handling: Dict[str, str] = field(default_factory=dict)
-    metadata: Dict[str, Any] = field(default_factory=dict)
-
-
-class FunctionExecutor:
-    """Executes functions with error handling and caching"""
+class FlowExecutor:
+    """Executes conversation flows and manages conversation state"""
     
-    def __init__(self):
-        self.function_cache: Dict[str, Any] = {}
-        self.loaded_modules: Dict[str, Any] = {}
+    def __init__(self, whatsapp_service, persistence_service):
+        self.whatsapp_service = whatsapp_service
+        self.persistence_service = persistence_service
+        self.active_flows: Dict[str, FlowDefinition] = {}
+        self.active_conversations: Dict[str, Dict[str, Any]] = {}
     
-    def execute_function(self, func_config: FunctionConfig, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute a function with error handling"""
+    def register_flow(self, flow: FlowDefinition):
+        """Register a flow for execution"""
+        self.active_flows[flow.id] = flow
+        logger.info(f"Flow registered: {flow.id} - {flow.name}")
+    
+    def start_conversation(self, phone_number: str, flow_id: str, initial_data: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Start a new conversation with a flow"""
         try:
-            # Check cache first
-            cache_key = f"{func_config.name}_{hash(str(func_config.parameters))}"
-            if func_config.cache_result and cache_key in self.function_cache:
-                logger.info(f"Function {func_config.name} result retrieved from cache")
+            if flow_id not in self.active_flows:
                 return {
-                    "success": True,
-                    "result": self.function_cache[cache_key],
-                    "cached": True
+                    "success": False,
+                    "error": f"Flow {flow_id} not found"
                 }
             
-            # Load module if not already loaded
-            if func_config.module not in self.loaded_modules:
-                self.loaded_modules[func_config.module] = importlib.import_module(func_config.module)
+            flow = self.active_flows[flow_id]
+            conversation_id = f"{phone_number}_flow_conversation"
             
-            module = self.loaded_modules[func_config.module]
-            function = getattr(module, func_config.function)
+            # Initialize conversation state
+            conversation_state = {
+                "conversation_id": conversation_id,
+                "phone_number": phone_number,
+                "flow_id": flow_id,
+                "current_step": flow.start_step,
+                "step_history": [],
+                "user_data": initial_data or {},
+                "variables": flow.variables.copy(),
+                "started_at": datetime.now(),
+                "last_activity": datetime.now()
+            }
             
-            # Prepare parameters
-            params = self._prepare_parameters(func_config.parameters, context)
+            self.active_conversations[conversation_id] = conversation_state
             
-            # Execute function
-            logger.info(f"Executing function {func_config.name} with params: {params}")
-            result = function(**params)
-            
-            # Cache result if enabled
-            if func_config.cache_result:
-                self.function_cache[cache_key] = result
+            # Execute the first step
+            result = self._execute_step(conversation_id, None)
             
             return {
                 "success": True,
-                "result": result,
-                "cached": False
+                "conversation_id": conversation_id,
+                "flow_id": flow_id,
+                "current_step": flow.start_step,
+                "whatsapp_result": result.get("whatsapp_result"),
+                "message": result.get("message", "Conversation started"),
+                "conversation_state": "active"
             }
             
         except Exception as e:
-            logger.error(f"Error executing function {func_config.name}: {e}")
+            logger.error(f"Error starting conversation: {e}")
             return {
                 "success": False,
-                "error": str(e),
-                "error_type": type(e).__name__
+                "error": str(e)
             }
     
-    def _prepare_parameters(self, parameters: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
-        """Prepare function parameters with context substitution"""
-        prepared_params = {}
-        
-        for key, value in parameters.items():
-            if isinstance(value, str) and value.startswith("{{") and value.endswith("}}"):
-                # Context variable substitution
-                var_name = value[2:-2].strip()
-                prepared_params[key] = context.get(var_name, value)
-            elif isinstance(value, dict):
-                # Recursive substitution for nested objects
-                prepared_params[key] = self._prepare_parameters(value, context)
-            elif isinstance(value, list):
-                # Handle lists with context substitution
-                prepared_params[key] = []
-                for item in value:
-                    if isinstance(item, str) and item.startswith("{{") and item.endswith("}}"):
-                        # Context variable substitution for list items
-                        var_name = item[2:-2].strip()
-                        prepared_params[key].append(context.get(var_name, item))
-                    elif isinstance(item, dict):
-                        prepared_params[key].append(self._prepare_parameters(item, context))
-                    else:
-                        prepared_params[key].append(item)
-            else:
-                prepared_params[key] = value
-        
-        return prepared_params
-
-
-class DataSourceManager:
-    """Manages data sources with caching and error handling"""
-    
-    def __init__(self):
-        self.data_cache: Dict[str, Any] = {}
-        self.cache_timestamps: Dict[str, datetime] = {}
-    
-    def get_data(self, source: DataSource, context: Dict[str, Any] = None) -> Dict[str, Any]:
-        """Get data from a source with caching"""
+    def execute_step(self, conversation_id: str, user_input: str = None) -> Dict[str, Any]:
+        """Execute the current step in a conversation"""
         try:
-            # Check cache first
-            if source.cache_ttl and source.name in self.data_cache:
-                cache_time = self.cache_timestamps.get(source.name)
-                if cache_time and (datetime.now() - cache_time).seconds < source.cache_ttl:
-                    logger.info(f"Data retrieved from cache: {source.name}")
-                    return {
-                        "success": True,
-                        "data": self.data_cache[source.name],
-                        "cached": True
-                    }
+            if conversation_id not in self.active_conversations:
+                return {
+                    "success": False,
+                    "error": f"Conversation {conversation_id} not found"
+                }
             
-            # Get data from source
-            data = self._fetch_from_source(source, context or {})
+            return self._execute_step(conversation_id, user_input)
             
-            # Cache data if TTL is set
-            if source.cache_ttl:
-                self.data_cache[source.name] = data
-                self.cache_timestamps[source.name] = datetime.now()
+        except Exception as e:
+            logger.error(f"Error executing step: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
+    
+    def _execute_step(self, conversation_id: str, user_input: str = None) -> Dict[str, Any]:
+        """Internal method to execute a step"""
+        conversation = self.active_conversations[conversation_id]
+        flow = self.active_flows[conversation["flow_id"]]
+        current_step_id = conversation["current_step"]
+        
+        if current_step_id not in flow.steps:
+            return {
+                "success": False,
+                "error": f"Step {current_step_id} not found in flow {flow.id}"
+            }
+        
+        step = flow.steps[current_step_id]
+        conversation["last_activity"] = datetime.now()
+        
+        # Add step to history
+        conversation["step_history"].append({
+            "step_id": current_step_id,
+            "timestamp": datetime.now(),
+            "user_input": user_input
+        })
+        
+        # Execute step based on type
+        if step.type == FlowStepType.MESSAGE:
+            return self._execute_message_step(conversation, step)
+        elif step.type == FlowStepType.QUESTION:
+            return self._execute_question_step(conversation, step)
+        elif step.type == FlowStepType.CHOICE:
+            return self._execute_choice_step(conversation, step)
+        elif step.type == FlowStepType.CONDITION:
+            return self._execute_condition_step(conversation, step, user_input)
+        elif step.type == FlowStepType.END:
+            return self._execute_end_step(conversation, step)
+        else:
+            return {
+                "success": False,
+                "error": f"Unsupported step type: {step.type}"
+            }
+    
+    def _execute_message_step(self, conversation: Dict[str, Any], step: FlowStep) -> Dict[str, Any]:
+        """Execute a message step"""
+        try:
+            # Process message template with variables
+            message = self._process_template(step.message, conversation["variables"])
+            
+            # Send message via WhatsApp
+            import asyncio
+            send_result = asyncio.run(self.whatsapp_service.send_message(
+                to=conversation["phone_number"],
+                message=message
+            ))
+            
+            # Move to next step
+            if step.next_step:
+                conversation["current_step"] = step.next_step
+            else:
+                conversation["current_step"] = "end"
             
             return {
                 "success": True,
-                "data": data,
-                "cached": False
+                "message": message,
+                "whatsapp_result": send_result,
+                "next_step": step.next_step
             }
             
         except Exception as e:
-            logger.error(f"Error getting data from source {source.name}: {e}")
+            logger.error(f"Error executing message step: {e}")
             return {
                 "success": False,
-                "error": str(e),
-                "error_type": type(e).__name__
+                "error": str(e)
             }
     
-    def _fetch_from_source(self, source: DataSource, context: Dict[str, Any]) -> Any:
-        """Fetch data from the actual source"""
-        if source.type == DataSourceType.DATABASE:
-            return self._fetch_from_database(source, context)
-        elif source.type == DataSourceType.API:
-            return self._fetch_from_api(source, context)
-        elif source.type == DataSourceType.FILE:
-            return self._fetch_from_file(source, context)
-        elif source.type == DataSourceType.MEMORY:
-            return self._fetch_from_memory(source, context)
-        elif source.type == DataSourceType.STATIC:
-            return source.config.get("data", {})
-        else:
-            raise ValueError(f"Unsupported data source type: {source.type}")
+    def _execute_question_step(self, conversation: Dict[str, Any], step: FlowStep) -> Dict[str, Any]:
+        """Execute a question step"""
+        try:
+            # Process question template
+            question = self._process_template(step.question, conversation["variables"])
+            
+            # Send question via WhatsApp
+            import asyncio
+            send_result = asyncio.run(self.whatsapp_service.send_message(
+                to=conversation["phone_number"],
+                message=question
+            ))
+            
+            # Stay on same step to wait for user input
+            return {
+                "success": True,
+                "message": question,
+                "whatsapp_result": send_result,
+                "waiting_for_input": True,
+                "current_step": conversation["current_step"]
+            }
+            
+        except Exception as e:
+            logger.error(f"Error executing question step: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
     
-    def _fetch_from_database(self, source: DataSource, context: Dict[str, Any]) -> Any:
-        """Fetch data from database"""
-        # This would integrate with your existing database services
-        # For now, return mock data
-        return {"message": "Database data not implemented yet"}
+    def _execute_choice_step(self, conversation: Dict[str, Any], step: FlowStep) -> Dict[str, Any]:
+        """Execute a choice step"""
+        try:
+            # Process message template
+            message = self._process_template(step.message, conversation["variables"])
+            
+            # Create interactive buttons
+            buttons = []
+            for option in step.options:
+                buttons.append({
+                    "type": "reply",
+                    "reply": {
+                        "id": option["id"],
+                        "title": option["title"]
+                    }
+                })
+            
+            # Send interactive message
+            import asyncio
+            send_result = asyncio.run(self.whatsapp_service.send_interactive_message(
+                to=conversation["phone_number"],
+                header_text=message,
+                body_text="Selecciona una opción:",
+                buttons=buttons
+            ))
+            
+            # Stay on same step to wait for user choice
+            return {
+                "success": True,
+                "message": message,
+                "whatsapp_result": send_result,
+                "waiting_for_input": True,
+                "current_step": conversation["current_step"]
+            }
+            
+        except Exception as e:
+            logger.error(f"Error executing choice step: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
     
-    def _fetch_from_api(self, source: DataSource, context: Dict[str, Any]) -> Any:
-        """Fetch data from API"""
-        # This would make HTTP requests
-        # For now, return mock data
-        return {"message": "API data not implemented yet"}
+    def _execute_condition_step(self, conversation: Dict[str, Any], step: FlowStep, user_input: str) -> Dict[str, Any]:
+        """Execute a condition step"""
+        try:
+            # Evaluate conditions
+            for condition in step.conditions:
+                if self._evaluate_condition(condition["condition"], conversation, user_input):
+                    conversation["current_step"] = condition["next_step"]
+                    return self._execute_step(conversation["conversation_id"], user_input)
+            
+            # No condition matched, use default next step
+            if step.next_step:
+                conversation["current_step"] = step.next_step
+                return self._execute_step(conversation["conversation_id"], user_input)
+            else:
+                return {
+                    "success": False,
+                    "error": "No condition matched and no default next step"
+                }
+                
+        except Exception as e:
+            logger.error(f"Error executing condition step: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
     
-    def _fetch_from_file(self, source: DataSource, context: Dict[str, Any]) -> Any:
-        """Fetch data from file"""
-        file_path = Path(source.config.get("path", ""))
-        if not file_path.exists():
-            raise FileNotFoundError(f"File not found: {file_path}")
-        
-        if file_path.suffix.lower() == '.json':
-            with open(file_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        elif file_path.suffix.lower() in ['.yaml', '.yml']:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                return yaml.safe_load(f)
-        else:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                return f.read()
+    def _execute_end_step(self, conversation: Dict[str, Any], step: FlowStep) -> Dict[str, Any]:
+        """Execute an end step"""
+        try:
+            # Process end message template
+            message = self._process_template(step.message, conversation["variables"])
+            
+            # Send final message
+            import asyncio
+            send_result = asyncio.run(self.whatsapp_service.send_message(
+                to=conversation["phone_number"],
+                message=message
+            ))
+            
+            # Mark conversation as ended
+            conversation["current_step"] = "ended"
+            conversation["ended_at"] = datetime.now()
+            
+            return {
+                "success": True,
+                "message": message,
+                "whatsapp_result": send_result,
+                "conversation_state": "ended"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error executing end step: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
     
-    def _fetch_from_memory(self, source: DataSource, context: Dict[str, Any]) -> Any:
-        """Fetch data from memory"""
-        return source.config.get("data", {})
+    def _process_template(self, template: str, variables: Dict[str, Any]) -> str:
+        """Process template with variables"""
+        try:
+            result = template
+            for key, value in variables.items():
+                placeholder = f"{{{{{key}}}}}"
+                result = result.replace(placeholder, str(value))
+            return result
+        except Exception as e:
+            logger.error(f"Error processing template: {e}")
+            return template
+    
+    def _evaluate_condition(self, condition: str, conversation: Dict[str, Any], user_input: str) -> bool:
+        """Evaluate a condition string"""
+        try:
+            # Simple condition evaluation
+            # For now, just check if user input matches expected values
+            if "is_first_message" in condition:
+                return len(conversation["step_history"]) == 1
+            
+            # Add more condition types as needed
+            return False
+            
+        except Exception as e:
+            logger.error(f"Error evaluating condition: {e}")
+            return False
 
 
-class ProfessionalFlowBuilder:
-    """Professional builder for creating conversation flows"""
-    
-    def __init__(self, flow_id: str, name: str, description: str = ""):
-        self.flow_id = flow_id
-        self.name = name
-        self.description = description
-        self.steps: Dict[str, FlowStep] = {}
-        self.start_step: Optional[str] = None
-        self.variables: Dict[str, Any] = {}
-        self.data_sources: Dict[str, DataSource] = {}
-        self.functions: Dict[str, FunctionConfig] = {}
-        self.error_handling: Dict[str, str] = {}
-        self.metadata: Dict[str, Any] = {}
-    
-    def start_with(self, step_id: str) -> 'ProfessionalFlowBuilder':
-        """Set the starting step"""
-        self.start_step = step_id
-        return self
-    
-    def add_data_source(self, name: str, source_type: DataSourceType, 
-                       config: Dict[str, Any], cache_ttl: int = None) -> 'ProfessionalFlowBuilder':
-        """Add a data source"""
-        self.data_sources[name] = DataSource(
-            name=name,
-            type=source_type,
-            config=config,
-            cache_ttl=cache_ttl
-        )
-        return self
-    
-    def add_function(self, name: str, module: str, function: str,
-                    parameters: Dict[str, Any] = None, timeout: int = 30,
-                    retry_count: int = 3, error_handler: str = None,
-                    cache_result: bool = False) -> 'ProfessionalFlowBuilder':
-        """Add a function configuration"""
-        self.functions[name] = FunctionConfig(
-            name=name,
-            module=module,
-            function=function,
-            parameters=parameters or {},
-            timeout=timeout,
-            retry_count=retry_count,
-            error_handler=error_handler,
-            cache_result=cache_result
-        )
-        return self
-    
-    def add_step(self, step: FlowStep) -> 'ProfessionalFlowBuilder':
-        """Add a step to the flow"""
-        self.steps[step.id] = step
-        return self
-    
-    def add_message_step(self, step_id: str, name: str, message: str,
-                        message_type: MessageType = MessageType.TEXT,
-                        next_step: Optional[str] = None,
-                        data_sources: List[str] = None,
-                        functions: List[str] = None) -> 'ProfessionalFlowBuilder':
-        """Add a message step with data sources and functions"""
-        step = FlowStep(
-            id=step_id,
-            type=FlowStepType.MESSAGE,
-            name=name,
-            message=message,
-            message_type=message_type,
-            next_step=next_step,
-            data_sources=[self.data_sources[ds] for ds in (data_sources or [])],
-            functions=[self.functions[f] for f in (functions or [])]
-        )
-        return self.add_step(step)
-    
-    def add_function_step(self, step_id: str, name: str, functions: List[str],
-                         next_step: Optional[str] = None,
-                         error_handler: str = None) -> 'ProfessionalFlowBuilder':
-        """Add a function execution step"""
-        step = FlowStep(
-            id=step_id,
-            type=FlowStepType.FUNCTION,
-            name=name,
-            functions=[self.functions[f] for f in functions],
-            next_step=next_step,
-            error_handler=error_handler
-        )
-        return self.add_step(step)
-    
-    def add_question_step(self, step_id: str, name: str, question: str,
-                         validation: Optional[Dict[str, Any]] = None,
-                         next_step: Optional[str] = None,
-                         functions: List[str] = None) -> 'ProfessionalFlowBuilder':
-        """Add a question step with validation and functions"""
-        step = FlowStep(
-            id=step_id,
-            type=FlowStepType.QUESTION,
-            name=name,
-            message=question,
-            validation=validation,
-            next_step=next_step,
-            functions=[self.functions[f] for f in (functions or [])]
-        )
-        return self.add_step(step)
-    
-    def add_choice_step(self, step_id: str, name: str, message: str,
-                       options: List[Dict[str, str]],
-                       next_step: Optional[str] = None,
-                       data_sources: List[str] = None) -> 'ProfessionalFlowBuilder':
-        """Add a choice step with dynamic options"""
-        step = FlowStep(
-            id=step_id,
-            type=FlowStepType.CHOICE,
-            name=name,
-            message=message,
-            message_type=MessageType.BUTTONS,
-            options=options,
-            next_step=next_step,
-            data_sources=[self.data_sources[ds] for ds in (data_sources or [])]
-        )
-        return self.add_step(step)
-    
-    def add_condition_step(self, step_id: str, name: str,
-                          conditions: List[Dict[str, Any]]) -> 'ProfessionalFlowBuilder':
-        """Add a condition step"""
-        step = FlowStep(
-            id=step_id,
-            type=FlowStepType.CONDITION,
-            name=name,
-            conditions=conditions
-        )
-        return self.add_step(step)
-    
-    def add_action_step(self, step_id: str, name: str, actions: List[str],
-                       next_step: Optional[str] = None) -> 'ProfessionalFlowBuilder':
-        """Add an action step"""
-        step = FlowStep(
-            id=step_id,
-            type=FlowStepType.ACTION,
-            name=name,
-            actions=actions,
-            next_step=next_step
-        )
-        return self.add_step(step)
-    
-    def add_wait_step(self, step_id: str, name: str, timeout: int = 300) -> 'ProfessionalFlowBuilder':
-        """Add a wait step"""
-        step = FlowStep(
-            id=step_id,
-            type=FlowStepType.WAIT,
-            name=name,
-            timeout=timeout
-        )
-        return self.add_step(step)
-    
-    def add_end_step(self, step_id: str, name: str, message: str = "Conversación finalizada") -> 'ProfessionalFlowBuilder':
-        """Add an end step"""
-        step = FlowStep(
-            id=step_id,
-            type=FlowStepType.END,
-            name=name,
-            message=message
-        )
-        return self.add_step(step)
-    
-    def set_variable(self, key: str, value: Any) -> 'ProfessionalFlowBuilder':
-        """Set a flow variable"""
-        self.variables[key] = value
-        return self
-    
-    def set_error_handler(self, error_type: str, handler_step: str) -> 'ProfessionalFlowBuilder':
-        """Set error handler"""
-        self.error_handling[error_type] = handler_step
-        return self
-    
-    def set_metadata(self, key: str, value: Any) -> 'ProfessionalFlowBuilder':
-        """Set flow metadata"""
-        self.metadata[key] = value
-        return self
-    
-    def build(self) -> FlowDefinition:
-        """Build the flow definition"""
-        if not self.start_step:
-            raise ValueError("Flow must have a start step")
-        
-        return FlowDefinition(
-            id=self.flow_id,
-            name=self.name,
-            description=self.description,
-            start_step=self.start_step,
-            steps=self.steps,
-            variables=self.variables,
-            data_sources=self.data_sources,
-            functions=self.functions,
-            error_handling=self.error_handling,
-            metadata=self.metadata
-        )
-
-
-# Factory functions
-def create_professional_flow_builder(flow_id: str, name: str, description: str = "") -> ProfessionalFlowBuilder:
-    """Create a new professional flow builder"""
-    return ProfessionalFlowBuilder(flow_id, name, description)
-
-
-def create_function_executor() -> FunctionExecutor:
-    """Create a new function executor"""
-    return FunctionExecutor()
-
-
-def create_data_source_manager() -> DataSourceManager:
-    """Create a new data source manager"""
-    return DataSourceManager()
+def create_flow_executor(whatsapp_service, persistence_service) -> FlowExecutor:
+    """Create a new FlowExecutor instance"""
+    return FlowExecutor(whatsapp_service, persistence_service)

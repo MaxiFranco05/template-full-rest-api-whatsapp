@@ -25,6 +25,11 @@ class WhatsAppMessageBuilder:
     
     def text_message(self, text: str) -> Dict[str, Any]:
         """Create a simple text message"""
+        # Debug: check if text is actually a string
+        if not isinstance(text, str):
+            print(f"DEBUG: text is not a string, it's {type(text)}: {text}")
+            text = str(text)
+        
         return {
             "messaging_product": "whatsapp",
             "to": self.phone_number,
@@ -427,22 +432,25 @@ class WhatsAppMessageSender:
     
     def send_text(self, phone_number: str, text: str) -> Dict[str, Any]:
         """Send a simple text message"""
+        import asyncio
         builder = WhatsAppMessageBuilder(phone_number)
         message = builder.text_message(text)
-        return self.whatsapp_service.send_message(phone_number, message)
+        return asyncio.run(self.whatsapp_service.send_message(phone_number, message))
     
     def send_buttons(self, phone_number: str, text: str, buttons: List[Dict[str, str]]) -> Dict[str, Any]:
         """Send an interactive button message"""
+        import asyncio
         builder = WhatsAppMessageBuilder(phone_number)
         message = builder.interactive_button_message(text, buttons)
-        return self.whatsapp_service.send_message(phone_number, message)
+        return asyncio.run(self.whatsapp_service.send_message(phone_number, message))
     
     def send_list(self, phone_number: str, text: str, button_text: str, 
                   sections: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Send an interactive list message"""
+        import asyncio
         builder = WhatsAppMessageBuilder(phone_number)
         message = builder.interactive_list_message(text, button_text, sections)
-        return self.whatsapp_service.send_message(phone_number, message)
+        return asyncio.run(self.whatsapp_service.send_message(phone_number, message))
     
     def send_media(self, phone_number: str, media_type: str, media_url: str, 
                    caption: Optional[str] = None) -> Dict[str, Any]:
