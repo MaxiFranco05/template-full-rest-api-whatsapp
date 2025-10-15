@@ -136,20 +136,107 @@ class FlowExecutor:
         })
         
         # Execute step based on type
-        if step.type == FlowStepType.MESSAGE:
-            return await self._execute_message_step(conversation, step)
-        elif step.type == FlowStepType.QUESTION:
-            return await self._execute_question_step(conversation, step)
-        elif step.type == FlowStepType.CHOICE:
-            return await self._execute_choice_step(conversation, step, user_input)
-        elif step.type == FlowStepType.CONDITION:
-            return await self._execute_condition_step(conversation, step, user_input)
-        elif step.type == FlowStepType.END:
-            return await self._execute_end_step(conversation, step)
-        else:
+        try:
+            if step.type == FlowStepType.MESSAGE:
+                result = await self._execute_message_step(conversation, step)
+            elif step.type == FlowStepType.QUESTION:
+                result = await self._execute_question_step(conversation, step)
+            elif step.type == FlowStepType.CHOICE:
+                result = await self._execute_choice_step(conversation, step, user_input)
+            elif step.type == FlowStepType.CONDITION:
+                result = await self._execute_condition_step(conversation, step, user_input)
+            elif step.type == FlowStepType.END:
+                result = await self._execute_end_step(conversation, step)
+            else:
+                result = {
+                    "success": False,
+                    "error": f"Unsupported step type: {step.type}"
+                }
+            
+            # If step execution failed and has error_fallback_step, execute it
+            if not result.get("success") and step.error_fallback_step:
+                logger.warning(f"Step {step.id} failed, executing error fallback: {step.error_fallback_step}")
+                return await self._execute_error_fallback_step(conversation, step.error_fallback_step)
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error executing step {step.id}: {e}", exc_info=True)
+            
+            # If step has error_fallback_step, execute it
+            if step.error_fallback_step:
+                logger.warning(f"Step {step.id} threw exception, executing error fallback: {step.error_fallback_step}")
+                return await self._execute_error_fallback_step(conversation, step.error_fallback_step)
+            
+            # Send error message to user
+            try:
+                error_message = "❌ Lo siento, ocurrió un error inesperado. Por favor intenta nuevamente."
+                await self.whatsapp_service.send_message(
+                    to=conversation["phone_number"],
+                    message=error_message
+                )
+                logger.info(f"Error message sent to user {conversation['phone_number']}")
+            except Exception as send_error:
+                logger.error(f"Failed to send error message to user: {send_error}")
+            
             return {
                 "success": False,
-                "error": f"Unsupported step type: {step.type}"
+                "error": str(e),
+                "user_notified": True
+            }
+    
+    async def _execute_error_fallback_step(self, conversation: Dict[str, Any], error_fallback_step_id: str) -> Dict[str, Any]:
+        """Execute an error fallback step"""
+        try:
+            flow = self.active_flows[conversation["flow_id"]]
+            
+            if error_fallback_step_id not in flow.steps:
+                logger.error(f"Error fallback step {error_fallback_step_id} not found in flow {flow.id}")
+                return {
+                    "success": False,
+                    "error": f"Error fallback step {error_fallback_step_id} not found"
+                }
+            
+            error_step = flow.steps[error_fallback_step_id]
+            conversation["current_step"] = error_fallback_step_id
+            
+            logger.info(f"Executing error fallback step: {error_fallback_step_id}")
+            
+            # Execute the error fallback step
+            if error_step.type == FlowStepType.MESSAGE:
+                return await self._execute_message_step(conversation, error_step)
+            elif error_step.type == FlowStepType.QUESTION:
+                return await self._execute_question_step(conversation, error_step)
+            elif error_step.type == FlowStepType.CHOICE:
+                return await self._execute_choice_step(conversation, error_step, None)
+            elif error_step.type == FlowStepType.CONDITION:
+                return await self._execute_condition_step(conversation, error_step, None)
+            elif error_step.type == FlowStepType.END:
+                return await self._execute_end_step(conversation, error_step)
+            else:
+                return {
+                    "success": False,
+                    "error": f"Unsupported error fallback step type: {error_step.type}"
+                }
+                
+        except Exception as e:
+            logger.error(f"Error executing error fallback step {error_fallback_step_id}: {e}", exc_info=True)
+            
+            # Send error message to user as last resort
+            try:
+                error_message = "❌ Lo siento, ocurrió un error inesperado. Por favor intenta nuevamente."
+                await self.whatsapp_service.send_message(
+                    to=conversation["phone_number"],
+                    message=error_message
+                )
+                logger.info(f"Error message sent to user {conversation['phone_number']}")
+            except Exception as send_error:
+                logger.error(f"Failed to send error message to user: {send_error}")
+            
+            return {
+                "success": False,
+                "error": str(e),
+                "user_notified": True
             }
     
     async def _execute_message_step(self, conversation: Dict[str, Any], step: FlowStep) -> Dict[str, Any]:
@@ -186,6 +273,13 @@ class FlowExecutor:
                     message_kwargs["address"] = metadata.get("address", "")
                 elif step.message_type.value == "contacts":
                     message_kwargs["contacts"] = metadata.get("contacts", [])
+                elif step.message_type.value == "catalog":
+                    # Catalog message - extract catalog parameters
+                    message_kwargs["catalog_id"] = metadata.get("catalog_id", "")
+                    message_kwargs["header_text"] = metadata.get("header_text", "🛍️ Nuestro Catálogo de Productos")
+                    message_kwargs["body_text"] = metadata.get("body_text", "Elegí una opción para ver más detalles 👇")
+                    message_kwargs["footer_text"] = metadata.get("footer_text", "Productos disponibles")
+                    message_kwargs["sections"] = metadata.get("sections", [])
             
             logger.info(f"Message kwargs: {message_kwargs}")
             

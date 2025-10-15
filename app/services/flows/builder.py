@@ -59,6 +59,7 @@ class FlowStep:
     actions: List[str] = field(default_factory=list)
     timeout: Optional[int] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
+    error_fallback_step: Optional[str] = None
 
 
 @dataclass
@@ -100,7 +101,8 @@ class FlowBuilder:
     def add_message_step(self, step_id: str, name: str, message: str, 
                         message_type: MessageType = MessageType.TEXT,
                         next_step: Optional[str] = None,
-                        metadata: Optional[Dict[str, Any]] = None) -> 'FlowBuilder':
+                        metadata: Optional[Dict[str, Any]] = None,
+                        error_fallback_step: Optional[str] = None) -> 'FlowBuilder':
         """Add a message step"""
         step = FlowStep(
             id=step_id,
@@ -109,7 +111,8 @@ class FlowBuilder:
             message=message,
             message_type=message_type,
             next_step=next_step,
-            metadata=metadata or {}
+            metadata=metadata or {},
+            error_fallback_step=error_fallback_step
         )
         return self.add_step(step)
     

@@ -106,6 +106,48 @@ class WhatsAppService:
             elif message_type == "contacts":
                 contacts = kwargs.get("contacts", [])
                 payload["contacts"] = contacts
+            elif message_type == "catalog":
+                # Catalog message - use interactive product_list format
+                catalog_id = kwargs.get("catalog_id", "")
+                header_text = kwargs.get("header_text", "🛍️ Nuestro Catálogo de Productos")
+                body_text = kwargs.get("body_text", "Elegí una opción para ver más detalles 👇")
+                footer_text = kwargs.get("footer_text", "Productos disponibles")
+                sections = kwargs.get("sections", [])
+                
+                # Validate catalog_id
+                if not catalog_id:
+                    logger.error("Catalog ID is required for catalog messages")
+                    return {
+                        "success": False,
+                        "error": "Catalog ID is required for catalog messages"
+                    }
+                
+                # Validate sections
+                if not sections or not any(section.get("product_items") for section in sections):
+                    logger.error("Catalog sections with product_items are required")
+                    return {
+                        "success": False,
+                        "error": "Catalog sections with product_items are required"
+                    }
+                
+                payload["type"] = "interactive"
+                payload["interactive"] = {
+                    "type": "product_list",
+                    "header": {
+                        "type": "text",
+                        "text": header_text
+                    },
+                    "body": {
+                        "text": body_text
+                    },
+                    "footer": {
+                        "text": footer_text
+                    },
+                    "action": {
+                        "catalog_id": catalog_id,
+                        "sections": sections
+                    }
+                }
             else:
                 # Default to text if unknown type
                 payload["text"] = {"body": message}

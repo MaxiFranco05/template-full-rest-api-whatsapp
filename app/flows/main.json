@@ -458,7 +458,23 @@
       "type": "message",
       "name": "Catalog Message Example",
       "message": "🛍️ **Ejemplo de Mensaje con Catálogo:**\n\nLos mensajes con catálogo son ideales para:\n\n• Mostrar productos\n• E-commerce\n• Tiendas online\n• Inventarios\n• Ventas\n\nIncluyen imágenes, precios, descripciones y botones de compra.",
-      "next_step": "back_to_message_types"
+      "message_type": "catalog",
+      "catalog_id": "785880617687252",
+      "header_text": "🛍️ Nuestro Catálogo de Productos",
+      "body_text": "Elegí una opción para ver más detalles 👇",
+      "footer_text": "Productos disponibles",
+      "sections": [
+        {
+          "title": "Productos Destacados",
+          "product_items": ["prod_001", "prod_002", "prod_003"]
+        },
+        {
+          "title": "Ofertas Especiales",
+          "product_items": ["prod_004", "prod_005"]
+        }
+      ],
+      "next_step": "back_to_message_types",
+      "error_fallback_step": "error_fallback"
     },
     {
       "id": "show_flow_example",
@@ -665,6 +681,13 @@
       "type": "message",
       "name": "Help Response",
       "message": "❓ **Ayuda y Soporte:**\n\nEste sistema de flujos conversacionales te permite:\n\n• Crear conversaciones interactivas\n• Usar diferentes tipos de mensajes\n• Implementar lógica condicional\n• Manejar estados de conversación\n• Integrar con bases de datos\n\nPara más información, consulta la documentación en `/docs`",
+      "next_step": "main_menu"
+    },
+    {
+      "id": "error_fallback",
+      "type": "message",
+      "name": "Error Fallback Message",
+      "message": "❌ **Error del Sistema**\n\nLo siento, ha ocurrido un error inesperado. Por favor, intenta nuevamente o contacta con soporte.\n\n¿Te gustaría volver al menú principal?",
       "next_step": "main_menu"
     },
     {

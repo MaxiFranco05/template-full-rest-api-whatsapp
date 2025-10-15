@@ -142,8 +142,17 @@ class UnifiedFlowLoader:
                     metadata["address"] = step_config.get("address", "")
                 elif message_type.value == "contacts":
                     metadata["contacts"] = step_config.get("contacts", [])
+                elif message_type.value == "catalog":
+                    # Catalog message - extract catalog parameters
+                    metadata["catalog_id"] = step_config.get("catalog_id", "")
+                    metadata["header_text"] = step_config.get("header_text", "🛍️ Nuestro Catálogo de Productos")
+                    metadata["body_text"] = step_config.get("body_text", "Elegí una opción para ver más detalles 👇")
+                    metadata["footer_text"] = step_config.get("footer_text", "Productos disponibles")
+                    metadata["sections"] = step_config.get("sections", [])
             
-            builder.add_message_step(step_id, name, message, message_type, next_step, metadata)
+            # Add error_fallback_step if present
+            error_fallback_step = step_config.get("error_fallback_step")
+            builder.add_message_step(step_id, name, message, message_type, next_step, metadata, error_fallback_step)
         
         elif step_type == "question":
             question = step_config["question"]
