@@ -91,6 +91,12 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
                 # Procesar cambio de estado
                 logger.info(f"Estado de mensaje actualizado: {message_data}")
                 status_updates += 1
+                
+                # Si el mensaje falló, notificar al usuario
+                if message_data.get("status") == "failed":
+                    logger.info(f"Detectado mensaje fallido, notificando al usuario: {message_data}")
+                    await _notify_user_of_failed_message(message_data)
+                
                 # TODO: Actualizar estado en base de datos
                 # await update_message_status(db, message_data)
         
@@ -328,3 +334,51 @@ async def clear_all_message_buffers():
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error interno del servidor"
         )
+
+
+async def _notify_user_of_failed_message(message_data: dict):
+    """Notificar al usuario cuando un mensaje falla"""
+    try:
+        logger.info(f"[ERROR NOTIFICATION] Iniciando notificación de error: {message_data}")
+        
+        from app.services.whatsapp.service import WhatsAppService
+        
+        recipient_id = message_data.get("recipient_id")
+        errors = message_data.get("errors", [])
+        
+        logger.info(f"[ERROR NOTIFICATION] recipient_id: {recipient_id}, errors: {errors}")
+        
+        if not recipient_id or not errors:
+            logger.warning(f"[ERROR NOTIFICATION] Datos insuficientes para notificar: recipient_id={recipient_id}, errors={errors}")
+            return
+        
+        # Determinar el tipo de error y crear mensaje apropiado
+        error_message = "❌ Lo siento, hubo un problema al enviar el mensaje."
+        
+        for error in errors:
+            error_code = error.get("code", 0)
+            error_details = error.get("error_data", {}).get("details", "")
+            
+            if error_code == 131053:  # Media upload error
+                if "exceeds maximum allowed size" in error_details:
+                    error_message = "❌ El archivo es demasiado grande para enviar por WhatsApp. Por favor, intenta con un archivo más pequeño."
+                elif "Unsupported" in error_details:
+                    error_message = "❌ El formato del archivo no es compatible con WhatsApp. Por favor, intenta con otro formato."
+                elif "Downloading media from weblink failed" in error_details:
+                    error_message = "❌ No se pudo descargar el archivo desde la URL. Por favor, intenta nuevamente más tarde."
+                else:
+                    error_message = "❌ Error al procesar el archivo multimedia. Por favor, intenta con otro archivo."
+            else:
+                error_message = f"❌ Error al enviar el mensaje (código: {error_code}). Por favor, intenta nuevamente."
+        
+        # Enviar mensaje de error al usuario
+        whatsapp_service = WhatsAppService()
+        await whatsapp_service.send_message(
+            to=recipient_id,
+            message=error_message
+        )
+        
+        logger.info(f"Mensaje de error enviado a usuario {recipient_id}: {error_message}")
+        
+    except Exception as e:
+        logger.error(f"Error notificando al usuario del mensaje fallido: {e}")

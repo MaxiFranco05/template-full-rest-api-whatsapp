@@ -395,7 +395,10 @@
       "id": "show_video_example",
       "type": "message",
       "name": "Video Message Example",
-      "message": "🎥 **Ejemplo de Mensaje con Video:**\n\nLos mensajes con video pueden incluir:\n\n• Videos explicativos\n• Demostraciones\n• Tutoriales\n• Contenido promocional\n• Videos cortos\n\nWhatsApp soporta formatos MP4, 3GPP y AVI.",
+      "message": "🎥 Ejemplo de mensaje con video real",
+      "message_type": "video",
+      "video_url": "https://www.learningcontainer.com/wp-content/uploads/2020/05/sample-mp4-file.mp4",
+      "caption": "Este es un video enviado usando el tipo 'video' nativo de WhatsApp. Los mensajes con video pueden incluir videos explicativos, demostraciones, tutoriales, contenido promocional y videos cortos.",
       "next_step": "back_to_message_types"
     },
     {
