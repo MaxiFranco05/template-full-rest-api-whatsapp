@@ -120,7 +120,30 @@ class UnifiedFlowLoader:
             message_type = MessageType(step_config.get("message_type", "text"))
             next_step = step_config.get("next_step")
             
-            builder.add_message_step(step_id, name, message, message_type, next_step)
+            # Extract additional parameters for non-text messages
+            metadata = {}
+            if message_type.value != "text":
+                if message_type.value == "image":
+                    metadata["image_url"] = step_config.get("image_url", "")
+                    metadata["caption"] = step_config.get("caption", message)
+                elif message_type.value == "document":
+                    metadata["document_url"] = step_config.get("document_url", "")
+                    metadata["filename"] = step_config.get("filename", "document.pdf")
+                    metadata["caption"] = step_config.get("caption", message)
+                elif message_type.value == "audio":
+                    metadata["audio_url"] = step_config.get("audio_url", "")
+                elif message_type.value == "video":
+                    metadata["video_url"] = step_config.get("video_url", "")
+                    metadata["caption"] = step_config.get("caption", message)
+                elif message_type.value == "location":
+                    metadata["latitude"] = step_config.get("latitude", 0)
+                    metadata["longitude"] = step_config.get("longitude", 0)
+                    metadata["name"] = step_config.get("name", "")
+                    metadata["address"] = step_config.get("address", "")
+                elif message_type.value == "contacts":
+                    metadata["contacts"] = step_config.get("contacts", [])
+            
+            builder.add_message_step(step_id, name, message, message_type, next_step, metadata)
         
         elif step_type == "question":
             question = step_config["question"]

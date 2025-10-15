@@ -365,7 +365,10 @@
       "id": "show_image_example",
       "type": "message",
       "name": "Image Message Example",
-      "message": "🖼️ **Ejemplo de Mensaje con Imagen:**\n\nLos mensajes con imágenes son ideales para:\n\n• Mostrar productos\n• Instrucciones visuales\n• Memes y contenido divertido\n• Infografías\n• Capturas de pantalla\n\nWhatsApp soporta formatos JPG, PNG, GIF y WebP.",
+      "message": "🖼️ Ejemplo de mensaje con imagen real",
+      "message_type": "image",
+      "image_url": "https://picsum.photos/400/300",
+      "caption": "Esta es una imagen real enviada usando el tipo 'image' nativo de WhatsApp. Los mensajes con imágenes son perfectos para mostrar productos, instrucciones visuales, memes, infografías y capturas de pantalla.",
       "next_step": "back_to_message_types"
     },
     {

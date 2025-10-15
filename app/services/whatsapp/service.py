@@ -12,6 +12,7 @@ from app.core.error_handling import WhatsAppException, handle_errors
 from app.services.business.conversation import conversation_manager, ConversationState
 from app.services.whatsapp.persistence import get_whatsapp_persistence_service
 from app.services.whatsapp.message_builder import create_message_sender, create_message_templates
+from app.services.flows.builder import MessageType
 from app.utils.helpers import (
     get_current_utc_time,
     parse_timestamp_to_utc,
@@ -45,7 +46,8 @@ class WhatsAppService:
         self, 
         to: str, 
         message: str, 
-        message_type: str = "text"
+        message_type: str = "text",
+        **kwargs
     ) -> Dict[str, Any]:
         """Send message through WhatsApp Business API"""
         try:
@@ -56,14 +58,57 @@ class WhatsAppService:
                 "Content-Type": "application/json"
             }
             
+            # Build payload based on message type
             payload = {
                 "messaging_product": "whatsapp",
                 "to": to,
-                "type": message_type,
-                "text": {
-                    "body": message
-                }
+                "type": message_type
             }
+            
+            if message_type == "text":
+                payload["text"] = {"body": message}
+            elif message_type == "image":
+                image_url = kwargs.get("image_url", "")
+                caption = kwargs.get("caption", message)  # Use message as caption if no caption provided
+                payload["image"] = {"link": image_url}
+                if caption:
+                    payload["image"]["caption"] = caption
+            elif message_type == "document":
+                document_url = kwargs.get("document_url", "")
+                filename = kwargs.get("filename", "document.pdf")
+                caption = kwargs.get("caption", message)
+                payload["document"] = {
+                    "link": document_url,
+                    "filename": filename
+                }
+                if caption:
+                    payload["document"]["caption"] = caption
+            elif message_type == "audio":
+                audio_url = kwargs.get("audio_url", "")
+                payload["audio"] = {"link": audio_url}
+            elif message_type == "video":
+                video_url = kwargs.get("video_url", "")
+                caption = kwargs.get("caption", message)
+                payload["video"] = {"link": video_url}
+                if caption:
+                    payload["video"]["caption"] = caption
+            elif message_type == "location":
+                latitude = kwargs.get("latitude", 0)
+                longitude = kwargs.get("longitude", 0)
+                name = kwargs.get("name", "")
+                address = kwargs.get("address", "")
+                payload["location"] = {
+                    "latitude": latitude,
+                    "longitude": longitude,
+                    "name": name,
+                    "address": address
+                }
+            elif message_type == "contacts":
+                contacts = kwargs.get("contacts", [])
+                payload["contacts"] = contacts
+            else:
+                # Default to text if unknown type
+                payload["text"] = {"body": message}
             
             async with aiohttp.ClientSession() as session:
                 async with session.post(url, headers=headers, json=payload) as response:

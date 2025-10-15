@@ -27,13 +27,21 @@ class FlowStepType(Enum):
 class MessageType(Enum):
     """Types of WhatsApp messages"""
     TEXT = "text"
+    IMAGE = "image"
+    DOCUMENT = "document"
+    AUDIO = "audio"
+    VIDEO = "video"
+    LOCATION = "location"
+    CONTACTS = "contacts"
     BUTTONS = "buttons"
     LIST = "list"
     MEDIA = "media"
-    LOCATION = "location"
     CONTACT = "contact"
     STICKER = "sticker"
     TEMPLATE = "template"
+    REACTION = "reaction"
+    CATALOG = "catalog"
+    FLOW = "flow"
 
 
 @dataclass
@@ -91,7 +99,8 @@ class FlowBuilder:
     
     def add_message_step(self, step_id: str, name: str, message: str, 
                         message_type: MessageType = MessageType.TEXT,
-                        next_step: Optional[str] = None) -> 'FlowBuilder':
+                        next_step: Optional[str] = None,
+                        metadata: Optional[Dict[str, Any]] = None) -> 'FlowBuilder':
         """Add a message step"""
         step = FlowStep(
             id=step_id,
@@ -99,7 +108,8 @@ class FlowBuilder:
             name=name,
             message=message,
             message_type=message_type,
-            next_step=next_step
+            next_step=next_step,
+            metadata=metadata or {}
         )
         return self.add_step(step)
     

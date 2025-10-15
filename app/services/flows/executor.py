@@ -158,10 +158,37 @@ class FlowExecutor:
             # Process message template with variables
             message = self._process_template(step.message, conversation["variables"])
             
+            # Prepare additional parameters for different message types
+            message_kwargs = {}
+            if step.message_type.value != "text":
+                # Extract parameters from metadata for non-text messages
+                metadata = step.metadata or {}
+                if step.message_type.value == "image":
+                    message_kwargs["image_url"] = metadata.get("image_url", "")
+                    message_kwargs["caption"] = metadata.get("caption", message)
+                elif step.message_type.value == "document":
+                    message_kwargs["document_url"] = metadata.get("document_url", "")
+                    message_kwargs["filename"] = metadata.get("filename", "document.pdf")
+                    message_kwargs["caption"] = metadata.get("caption", message)
+                elif step.message_type.value == "audio":
+                    message_kwargs["audio_url"] = metadata.get("audio_url", "")
+                elif step.message_type.value == "video":
+                    message_kwargs["video_url"] = metadata.get("video_url", "")
+                    message_kwargs["caption"] = metadata.get("caption", message)
+                elif step.message_type.value == "location":
+                    message_kwargs["latitude"] = metadata.get("latitude", 0)
+                    message_kwargs["longitude"] = metadata.get("longitude", 0)
+                    message_kwargs["name"] = metadata.get("name", "")
+                    message_kwargs["address"] = metadata.get("address", "")
+                elif step.message_type.value == "contacts":
+                    message_kwargs["contacts"] = metadata.get("contacts", [])
+            
             # Send message via WhatsApp
             send_result = await self.whatsapp_service.send_message(
                 to=conversation["phone_number"],
-                message=message
+                message=message,
+                message_type=step.message_type.value,
+                **message_kwargs
             )
             
             # Move to next step and execute it automatically
