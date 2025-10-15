@@ -304,9 +304,61 @@
     },
     {
       "id": "show_list_example",
-      "type": "message",
+      "type": "choice",
       "name": "List Message Example",
-      "message": "📋 **Ejemplo de Mensaje con Lista:**\n\nLas listas permiten mostrar múltiples opciones organizadas en secciones. Son ideales para:\n\n• Catálogos de productos\n• Menús extensos\n• Opciones organizadas por categorías\n• Navegación compleja\n\nLas listas pueden tener hasta 10 opciones organizadas en secciones.",
+      "message": "📋 Ejemplo de Mensaje con Lista",
+      "message_type": "list",
+      "choice_type": "list",
+      "button_text": "Ver Opciones",
+      "options": [
+        {
+          "id": "list_option1",
+          "title": "📋 Opción 1",
+          "description": "Primera opción de la lista"
+        },
+        {
+          "id": "list_option2",
+          "title": "📋 Opción 2",
+          "description": "Segunda opción de la lista"
+        },
+        {
+          "id": "list_option3",
+          "title": "📋 Opción 3",
+          "description": "Tercera opción de la lista"
+        },
+        {
+          "id": "list_option4",
+          "title": "📋 Opción 4",
+          "description": "Cuarta opción de la lista"
+        },
+        {
+          "id": "list_option5",
+          "title": "📋 Opción 5",
+          "description": "Quinta opción de la lista"
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "user_choice == 'list_option1'",
+          "next_step": "back_to_message_types"
+        },
+        {
+          "condition": "user_choice == 'list_option2'",
+          "next_step": "back_to_message_types"
+        },
+        {
+          "condition": "user_choice == 'list_option3'",
+          "next_step": "back_to_message_types"
+        },
+        {
+          "condition": "user_choice == 'list_option4'",
+          "next_step": "back_to_message_types"
+        },
+        {
+          "condition": "user_choice == 'list_option5'",
+          "next_step": "back_to_message_types"
+        }
+      ],
       "next_step": "back_to_message_types"
     },
     {
