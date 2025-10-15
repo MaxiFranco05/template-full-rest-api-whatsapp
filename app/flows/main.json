@@ -62,22 +62,68 @@
       "type": "choice",
       "name": "Message Types Menu",
       "message": "Selecciona un tipo de mensaje para ver un ejemplo:",
+      "choice_type": "list",
+      "button_text": "Ver Tipos",
       "options": [
         {
           "id": "text_message",
-          "title": "💬 Texto"
+          "title": "💬 Texto",
+          "description": "Mensajes de texto simples"
         },
         {
           "id": "button_message",
-          "title": "🔘 Botones"
+          "title": "🔘 Botones",
+          "description": "Mensajes interactivos con botones"
         },
         {
           "id": "list_message",
-          "title": "📋 Lista"
+          "title": "📋 Lista",
+          "description": "Mensajes interactivos con listas"
         },
         {
-          "id": "media_message",
-          "title": "🖼️ Multimedia"
+          "id": "image_message",
+          "title": "🖼️ Imagen",
+          "description": "Mensajes con imágenes"
+        },
+        {
+          "id": "document_message",
+          "title": "📄 Documento",
+          "description": "Mensajes con archivos"
+        },
+        {
+          "id": "audio_message",
+          "title": "🎵 Audio",
+          "description": "Mensajes con archivos de audio"
+        },
+        {
+          "id": "video_message",
+          "title": "🎥 Video",
+          "description": "Mensajes con archivos de video"
+        },
+        {
+          "id": "location_message",
+          "title": "📍 Ubicación",
+          "description": "Mensajes con coordenadas GPS"
+        },
+        {
+          "id": "contact_message",
+          "title": "👤 Contacto",
+          "description": "Mensajes con información de contacto"
+        },
+        {
+          "id": "reaction_message",
+          "title": "👍 Reacción",
+          "description": "Mensajes de reacción con emojis"
+        },
+        {
+          "id": "catalog_message",
+          "title": "🛍️ Catálogo",
+          "description": "Mensajes con productos estructurados"
+        },
+        {
+          "id": "flow_message",
+          "title": "🔄 Flujo",
+          "description": "Mensajes con experiencias interactivas"
         }
       ],
       "conditions": [
@@ -94,8 +140,40 @@
           "next_step": "show_list_example"
         },
         {
-          "condition": "user_choice == 'media_message'",
-          "next_step": "show_media_example"
+          "condition": "user_choice == 'image_message'",
+          "next_step": "show_image_example"
+        },
+        {
+          "condition": "user_choice == 'document_message'",
+          "next_step": "show_document_example"
+        },
+        {
+          "condition": "user_choice == 'audio_message'",
+          "next_step": "show_audio_example"
+        },
+        {
+          "condition": "user_choice == 'video_message'",
+          "next_step": "show_video_example"
+        },
+        {
+          "condition": "user_choice == 'location_message'",
+          "next_step": "show_location_example"
+        },
+        {
+          "condition": "user_choice == 'contact_message'",
+          "next_step": "show_contact_example"
+        },
+        {
+          "condition": "user_choice == 'reaction_message'",
+          "next_step": "show_reaction_example"
+        },
+        {
+          "condition": "user_choice == 'catalog_message'",
+          "next_step": "show_catalog_example"
+        },
+        {
+          "condition": "user_choice == 'flow_message'",
+          "next_step": "show_flow_example"
         }
       ]
     },
@@ -169,10 +247,66 @@
       "next_step": "back_to_message_types"
     },
     {
-      "id": "show_media_example",
+      "id": "show_image_example",
       "type": "message",
-      "name": "Media Message Example",
-      "message": "🖼️ **Ejemplo de Mensaje Multimedia:**\n\nLos mensajes multimedia pueden incluir:\n\n• 📷 Imágenes\n• 🎥 Videos\n• 📄 Documentos\n• 🎵 Audio\n• 📍 Ubicaciones\n• 👤 Contactos\n• 🎭 Stickers\n\nSon perfectos para mostrar productos, instrucciones visuales o contenido interactivo.",
+      "name": "Image Message Example",
+      "message": "🖼️ **Ejemplo de Mensaje con Imagen:**\n\nLos mensajes con imágenes son ideales para:\n\n• Mostrar productos\n• Instrucciones visuales\n• Memes y contenido divertido\n• Infografías\n• Capturas de pantalla\n\nWhatsApp soporta formatos JPG, PNG, GIF y WebP.",
+      "next_step": "back_to_message_types"
+    },
+    {
+      "id": "show_document_example",
+      "type": "message",
+      "name": "Document Message Example",
+      "message": "📄 **Ejemplo de Mensaje con Documento:**\n\nLos mensajes con documentos pueden incluir:\n\n• PDFs\n• Archivos de Word\n• Hojas de cálculo\n• Presentaciones\n• Archivos de texto\n\nPerfectos para compartir manuales, contratos o cualquier archivo.",
+      "next_step": "back_to_message_types"
+    },
+    {
+      "id": "show_audio_example",
+      "type": "message",
+      "name": "Audio Message Example",
+      "message": "🎵 **Ejemplo de Mensaje con Audio:**\n\nLos mensajes de audio son ideales para:\n\n• Notas de voz\n• Música\n• Podcasts\n• Instrucciones habladas\n• Saludos personalizados\n\nWhatsApp soporta formatos MP3, M4A, OGG y WAV.",
+      "next_step": "back_to_message_types"
+    },
+    {
+      "id": "show_video_example",
+      "type": "message",
+      "name": "Video Message Example",
+      "message": "🎥 **Ejemplo de Mensaje con Video:**\n\nLos mensajes con video pueden incluir:\n\n• Videos explicativos\n• Demostraciones\n• Tutoriales\n• Contenido promocional\n• Videos cortos\n\nWhatsApp soporta formatos MP4, 3GPP y AVI.",
+      "next_step": "back_to_message_types"
+    },
+    {
+      "id": "show_location_example",
+      "type": "message",
+      "name": "Location Message Example",
+      "message": "📍 **Ejemplo de Mensaje con Ubicación:**\n\nLos mensajes con ubicación son perfectos para:\n\n• Compartir direcciones\n• Mostrar tiendas cercanas\n• Envío de pedidos\n• Encuentros\n• Turismo\n\nIncluyen coordenadas GPS precisas y mapas interactivos.",
+      "next_step": "back_to_message_types"
+    },
+    {
+      "id": "show_contact_example",
+      "type": "message",
+      "name": "Contact Message Example",
+      "message": "👤 **Ejemplo de Mensaje con Contacto:**\n\nLos mensajes con contacto pueden incluir:\n\n• Información de contacto\n• Tarjetas de presentación\n• Referencias\n• Datos de empresa\n• Vcards\n\nPerfectos para networking y compartir información de contacto.",
+      "next_step": "back_to_message_types"
+    },
+    {
+      "id": "show_reaction_example",
+      "type": "message",
+      "name": "Reaction Message Example",
+      "message": "👍 **Ejemplo de Mensaje de Reacción:**\n\nLas reacciones permiten:\n\n• Responder con emojis\n• Confirmar recepción\n• Expresar emociones\n• Feedback rápido\n• Interacción simple\n\nIncluyen emojis como 👍, ❤️, 😂, 😮, 😢, 😡.",
+      "next_step": "back_to_message_types"
+    },
+    {
+      "id": "show_catalog_example",
+      "type": "message",
+      "name": "Catalog Message Example",
+      "message": "🛍️ **Ejemplo de Mensaje con Catálogo:**\n\nLos mensajes con catálogo son ideales para:\n\n• Mostrar productos\n• E-commerce\n• Tiendas online\n• Inventarios\n• Ventas\n\nIncluyen imágenes, precios, descripciones y botones de compra.",
+      "next_step": "back_to_message_types"
+    },
+    {
+      "id": "show_flow_example",
+      "type": "message",
+      "name": "Flow Message Example",
+      "message": "🔄 **Ejemplo de Mensaje con Flujo:**\n\nLos mensajes con flujo permiten:\n\n• Experiencias interactivas\n• Formularios complejos\n• Navegación avanzada\n• Integración con APIs\n• Flujos personalizados\n\nSon la evolución de los mensajes interactivos de WhatsApp.",
       "next_step": "back_to_message_types"
     },
     {

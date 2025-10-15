@@ -177,10 +177,12 @@ class WhatsAppService:
         self, 
         to: str, 
         header_text: str,
-        body_text: str,
-        buttons: List[Dict[str, str]]
+        body_text: str = None,
+        buttons: List[Dict[str, str]] = None,
+        button_text: str = None,
+        sections: List[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """Send interactive message with buttons through WhatsApp Business API"""
+        """Send interactive message with buttons or list through WhatsApp Business API"""
         try:
             url = f"{self.api_url}/{self.phone_number_id}/messages"
             
@@ -189,35 +191,64 @@ class WhatsAppService:
                 "Content-Type": "application/json"
             }
             
-            # Format buttons for WhatsApp API
-            formatted_buttons = []
-            for button in buttons[:3]:  # WhatsApp allows max 3 buttons
-                formatted_buttons.append({
-                    "type": "reply",
-                    "reply": {
-                        "id": button["id"],
-                        "title": button["title"]
-                    }
-                })
-            
-            payload = {
-                "messaging_product": "whatsapp",
-                "to": to,
-                "type": "interactive",
-                "interactive": {
-                    "type": "button",
-                    "header": {
-                        "type": "text",
-                        "text": header_text
-                    },
-                    "body": {
-                        "text": body_text
-                    },
-                    "action": {
-                        "buttons": formatted_buttons
+            # Determine if this is a button or list message
+            if sections and button_text:
+                # Send list message
+                logger.info(f"Sending interactive list message to {to}")
+                
+                payload = {
+                    "messaging_product": "whatsapp",
+                    "to": to,
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "list",
+                        "header": {
+                            "type": "text",
+                            "text": header_text
+                        },
+                        "body": {
+                            "text": body_text or "Selecciona una opción:"
+                        },
+                        "action": {
+                            "button": button_text,
+                            "sections": sections
+                        }
                     }
                 }
-            }
+            else:
+                # Send button message
+                logger.info(f"Sending interactive button message to {to}")
+                
+                # Format buttons for WhatsApp API
+                formatted_buttons = []
+                if buttons:
+                    for button in buttons[:3]:  # WhatsApp allows max 3 buttons
+                        formatted_buttons.append({
+                            "type": "reply",
+                            "reply": {
+                                "id": button["id"],
+                                "title": button["title"]
+                            }
+                        })
+                
+                payload = {
+                    "messaging_product": "whatsapp",
+                    "to": to,
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "button",
+                        "header": {
+                            "type": "text",
+                            "text": header_text
+                        },
+                        "body": {
+                            "text": body_text or "Selecciona una opción:"
+                        },
+                        "action": {
+                            "buttons": formatted_buttons
+                        }
+                    }
+                }
             
             async with aiohttp.ClientSession() as session:
                 async with session.post(url, headers=headers, json=payload) as response:

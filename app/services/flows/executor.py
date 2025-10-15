@@ -245,8 +245,8 @@ class FlowExecutor:
                     "current_step": conversation["current_step"]
                 }
             
-            # No user input, send interactive buttons
-            logger.info("No user input, sending interactive buttons")
+            # No user input, send interactive message (buttons or list)
+            logger.info("No user input, sending interactive message")
             message = self._process_template(step.message, conversation["variables"])
             
             # Validate message length for WhatsApp interactive messages
@@ -257,21 +257,81 @@ class FlowExecutor:
                 message = message[:57] + "..."
                 logger.info(f"Truncated message to: {message}")
             
-            # Create interactive buttons
-            buttons = []
-            for option in step.options:
-                buttons.append({
-                    "id": option["id"],
-                    "title": option["title"]
-                })
-            
-            # Send interactive message
-            send_result = await self.whatsapp_service.send_interactive_message(
-                to=conversation["phone_number"],
-                header_text=message,
-                body_text="Selecciona una opción:",
-                buttons=buttons
-            )
+            # Check if this should be a list or buttons based on message_type
+            if step.message_type.value == "list":
+                # Use list format
+                logger.info(f"Using list format (specified in JSON) for {len(step.options)} options")
+                
+                # WhatsApp allows max 10 rows per list, so we need to split into sections if needed
+                max_rows_per_section = 10
+                sections = []
+                
+                if len(step.options) <= max_rows_per_section:
+                    # Single section
+                    sections = [{
+                        "title": "Opciones",
+                        "rows": []
+                    }]
+                    
+                    for option in step.options:
+                        sections[0]["rows"].append({
+                            "id": option["id"],
+                            "title": option["title"],
+                            "description": option.get("description", "")
+                        })
+                else:
+                    # Multiple sections - split options into groups of max_rows_per_section
+                    section_count = (len(step.options) + max_rows_per_section - 1) // max_rows_per_section
+                    
+                    for i in range(section_count):
+                        start_idx = i * max_rows_per_section
+                        end_idx = min(start_idx + max_rows_per_section, len(step.options))
+                        section_options = step.options[start_idx:end_idx]
+                        
+                        section_title = f"Opciones {i+1}" if section_count > 1 else "Opciones"
+                        section = {
+                            "title": section_title,
+                            "rows": []
+                        }
+                        
+                        for option in section_options:
+                            section["rows"].append({
+                                "id": option["id"],
+                                "title": option["title"],
+                                "description": option.get("description", "")
+                            })
+                        
+                        sections.append(section)
+                
+                # Get button text from metadata or use default
+                button_text = step.metadata.get("button_text", "Ver Opciones")
+                
+                # Send interactive list message
+                send_result = await self.whatsapp_service.send_interactive_message(
+                    to=conversation["phone_number"],
+                    header_text=message,
+                    button_text=button_text,
+                    sections=sections
+                )
+            else:
+                # Use buttons format (default)
+                logger.info(f"Using buttons format (specified in JSON) for {len(step.options)} options")
+                
+                # Create interactive buttons
+                buttons = []
+                for option in step.options:
+                    buttons.append({
+                        "id": option["id"],
+                        "title": option["title"]
+                    })
+                
+                # Send interactive button message
+                send_result = await self.whatsapp_service.send_interactive_message(
+                    to=conversation["phone_number"],
+                    header_text=message,
+                    body_text="Selecciona una opción:",
+                    buttons=buttons
+                )
             
             # Stay on same step to wait for user choice
             return {
