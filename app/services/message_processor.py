@@ -96,10 +96,14 @@ class MessageProcessor:
         # Calcular diferencia temporal
         time_diff = (message_time - buffer.last_api_message_time).total_seconds()
         
-        # Aplicar tolerancia temporal: permitir mensajes que llegaron hasta X segundos antes del último mensaje API
-        # Esto maneja casos donde mensajes llegan ligeramente tarde debido a latencia de red
-        tolerance_threshold = -self.time_tolerance  # Negativo porque queremos permitir mensajes "antiguos" hasta cierto punto
+        # LÓGICA SIMPLIFICADA: Solo ignorar mensajes que fueron enviados ANTES del último mensaje API
+        # Permitir TODOS los mensajes que llegaron DESPUÉS del último mensaje API
+        # Aplicar tolerancia solo para mensajes que llegaron ligeramente tarde (latencia de red)
+        tolerance_threshold = -self.time_tolerance  # Ejemplo: -300 segundos (5 minutos)
         
+        # PERMITIR si:
+        # 1. El mensaje llegó DESPUÉS del último mensaje API (time_diff >= 0)
+        # 2. O llegó ligeramente ANTES pero dentro de la tolerancia (time_diff >= -300)
         is_valid = time_diff >= tolerance_threshold
         
         # Logging detallado para debugging
@@ -107,11 +111,14 @@ class MessageProcessor:
         logger.info(f"  - Último mensaje API: {buffer.last_api_message_time}")
         logger.info(f"  - Mensaje entrante: {message_time}")
         logger.info(f"  - Diferencia temporal: {time_diff:.2f} segundos")
-        logger.info(f"  - Tolerancia: {tolerance_threshold} segundos")
-        logger.info(f"  - Válido: {is_valid}")
+        logger.info(f"  - Tolerancia aplicada: {tolerance_threshold} segundos")
+        logger.info(f"  - Regla: time_diff >= {tolerance_threshold}")
+        logger.info(f"  - Resultado: {is_valid}")
         
         if not is_valid:
-            logger.info(f"[MESSAGE PROCESSOR] Mensaje muy antiguo ignorado para {phone_number} - diferencia: {time_diff:.2f}s (límite: {tolerance_threshold}s)")
+            logger.info(f"[MESSAGE PROCESSOR] Mensaje ignorado para {phone_number} - enviado {abs(time_diff):.2f}s antes del último mensaje API (límite: {abs(tolerance_threshold)}s)")
+        else:
+            logger.info(f"[MESSAGE PROCESSOR] Mensaje aceptado para {phone_number} - diferencia: {time_diff:.2f}s")
         
         return is_valid
     
