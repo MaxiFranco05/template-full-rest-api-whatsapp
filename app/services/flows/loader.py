@@ -138,7 +138,7 @@ class UnifiedFlowLoader:
                 elif message_type.value == "location":
                     metadata["latitude"] = step_config.get("latitude", 0)
                     metadata["longitude"] = step_config.get("longitude", 0)
-                    metadata["name"] = step_config.get("name", "")
+                    metadata["name"] = step_config.get("location_name", "")
                     metadata["address"] = step_config.get("address", "")
                 elif message_type.value == "contacts":
                     metadata["contacts"] = step_config.get("contacts", [])

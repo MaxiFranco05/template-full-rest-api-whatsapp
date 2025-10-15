@@ -405,14 +405,45 @@
       "id": "show_location_example",
       "type": "message",
       "name": "Location Message Example",
-      "message": "📍 **Ejemplo de Mensaje con Ubicación:**\n\nLos mensajes con ubicación son perfectos para:\n\n• Compartir direcciones\n• Mostrar tiendas cercanas\n• Envío de pedidos\n• Encuentros\n• Turismo\n\nIncluyen coordenadas GPS precisas y mapas interactivos.",
+      "message": "📍 Ejemplo de mensaje con ubicación real",
+      "message_type": "location",
+      "latitude": -34.6037,
+      "longitude": -58.3816,
+      "location_name": "Obelisco de Buenos Aires",
+      "address": "Av. 9 de Julio, C1043 CABA, Argentina",
       "next_step": "back_to_message_types"
     },
     {
       "id": "show_contact_example",
       "type": "message",
       "name": "Contact Message Example",
-      "message": "👤 **Ejemplo de Mensaje con Contacto:**\n\nLos mensajes con contacto pueden incluir:\n\n• Información de contacto\n• Tarjetas de presentación\n• Referencias\n• Datos de empresa\n• Vcards\n\nPerfectos para networking y compartir información de contacto.",
+      "message": "👤 Ejemplo de mensaje con contacto real",
+      "message_type": "contacts",
+      "contacts": [
+        {
+          "name": {
+            "formatted_name": "Juan Pérez",
+            "first_name": "Juan",
+            "last_name": "Pérez"
+          },
+          "phones": [
+            {
+              "phone": "+5491123456789",
+              "type": "MOBILE"
+            }
+          ],
+          "emails": [
+            {
+              "email": "juan.perez@ejemplo.com",
+              "type": "WORK"
+            }
+          ],
+          "org": {
+            "company": "Empresa Ejemplo",
+            "title": "Desarrollador"
+          }
+        }
+      ],
       "next_step": "back_to_message_types"
     },
     {
