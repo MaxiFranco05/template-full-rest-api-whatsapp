@@ -71,9 +71,12 @@ class MessageProcessor:
     
     def _is_message_valid_for_processing(self, message_data: Dict[str, Any], buffer: MessageBuffer) -> bool:
         """Verifica si un mensaje es válido para procesar"""
-        # Si no hay mensaje API previo, ignorar
+        # Si no hay mensaje API previo, verificar si es un usuario nuevo
         if buffer.last_api_message_time is None:
-            return False
+            # Permitir procesar si es un usuario nuevo (primer mensaje)
+            # Esto activará el sistema de bienvenida automática
+            logger.info(f"[MESSAGE PROCESSOR] Usuario nuevo detectado para {buffer.phone_number} - permitiendo procesamiento")
+            return True
         
         # Verificar si el mensaje llegó después del último mensaje API
         message_timestamp = message_data.get("timestamp")
