@@ -12,6 +12,11 @@ from app.core.error_handling import WhatsAppException, handle_errors
 from app.services.business.conversation import conversation_manager, ConversationState
 from app.services.whatsapp.persistence import get_whatsapp_persistence_service
 from app.services.whatsapp.message_builder import create_message_sender, create_message_templates
+from app.utils.helpers import (
+    get_current_utc_time,
+    parse_timestamp_to_utc,
+    format_timestamp_for_logging
+)
 
 logger = logging.getLogger(__name__)
 
@@ -394,7 +399,7 @@ class WhatsAppService:
                 "type": "message",
                 "message_id": message_id,
                 "from": from_number,
-                "timestamp": datetime.fromtimestamp(int(timestamp)),
+                "timestamp": parse_timestamp_to_utc(timestamp),  # Usar función utilitaria para mantener UTC
                 "message_type": message_type,
                 "content": content,
                 "media_url": media_url,

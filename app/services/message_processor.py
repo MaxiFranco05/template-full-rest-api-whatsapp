@@ -10,6 +10,13 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
 from app.core.config import settings
+from app.utils.helpers import (
+    get_current_utc_time,
+    parse_timestamp_to_utc,
+    format_timestamp_for_logging,
+    calculate_time_difference_seconds,
+    is_timestamp_within_tolerance
+)
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +46,7 @@ class MessageProcessor:
         if phone_number not in self.message_buffers:
             self.message_buffers[phone_number] = MessageBuffer(phone_number=phone_number)
         
-        self.message_buffers[phone_number].last_api_message_time = datetime.utcnow()
+        self.message_buffers[phone_number].last_api_message_time = get_current_utc_time()
         logger.info(f"[MESSAGE PROCESSOR] Marcado mensaje API enviado para {phone_number}")
     
     def add_incoming_message(self, message_data: Dict[str, Any]) -> None:
@@ -83,40 +90,35 @@ class MessageProcessor:
         
         # Verificar si el mensaje llegó después del último mensaje API
         message_timestamp = message_data.get("timestamp")
-        if isinstance(message_timestamp, datetime):
-            message_time = message_timestamp
-        else:
-            # Si es timestamp Unix, convertir
-            try:
-                message_time = datetime.fromtimestamp(int(message_timestamp))
-            except (ValueError, TypeError):
-                logger.warning(f"[MESSAGE PROCESSOR] Timestamp inválido para {phone_number}: {message_timestamp}")
-                return False
         
-        # Calcular diferencia temporal
-        time_diff = (message_time - buffer.last_api_message_time).total_seconds()
+        try:
+            # Usar función utilitaria para parsear timestamp a UTC
+            message_time = parse_timestamp_to_utc(message_timestamp)
+        except ValueError as e:
+            logger.warning(f"[MESSAGE PROCESSOR] Timestamp inválido para {phone_number}: {e}")
+            return False
         
-        # LÓGICA SIMPLIFICADA: Solo ignorar mensajes que fueron enviados ANTES del último mensaje API
-        # Permitir TODOS los mensajes que llegaron DESPUÉS del último mensaje API
-        # Aplicar tolerancia solo para mensajes que llegaron ligeramente tarde (latencia de red)
-        tolerance_threshold = -self.time_tolerance  # Ejemplo: -300 segundos (5 minutos)
+        # Usar función utilitaria para verificar tolerancia temporal
+        is_valid = is_timestamp_within_tolerance(
+            message_timestamp=message_time,
+            reference_timestamp=buffer.last_api_message_time,
+            tolerance_seconds=self.time_tolerance
+        )
         
-        # PERMITIR si:
-        # 1. El mensaje llegó DESPUÉS del último mensaje API (time_diff >= 0)
-        # 2. O llegó ligeramente ANTES pero dentro de la tolerancia (time_diff >= -300)
-        is_valid = time_diff >= tolerance_threshold
+        # Calcular diferencia temporal para logging
+        time_diff = calculate_time_difference_seconds(buffer.last_api_message_time, message_time)
         
         # Logging detallado para debugging
         logger.info(f"[MESSAGE PROCESSOR] Validación temporal para {phone_number}:")
-        logger.info(f"  - Último mensaje API: {buffer.last_api_message_time}")
-        logger.info(f"  - Mensaje entrante: {message_time}")
+        logger.info(f"  - Último mensaje API: {format_timestamp_for_logging(buffer.last_api_message_time)}")
+        logger.info(f"  - Mensaje entrante: {format_timestamp_for_logging(message_time)}")
         logger.info(f"  - Diferencia temporal: {time_diff:.2f} segundos")
-        logger.info(f"  - Tolerancia aplicada: {tolerance_threshold} segundos")
-        logger.info(f"  - Regla: time_diff >= {tolerance_threshold}")
+        logger.info(f"  - Tolerancia aplicada: {-self.time_tolerance} segundos")
+        logger.info(f"  - Regla: time_diff >= {-self.time_tolerance}")
         logger.info(f"  - Resultado: {is_valid}")
         
         if not is_valid:
-            logger.info(f"[MESSAGE PROCESSOR] Mensaje ignorado para {phone_number} - enviado {abs(time_diff):.2f}s antes del último mensaje API (límite: {abs(tolerance_threshold)}s)")
+            logger.info(f"[MESSAGE PROCESSOR] Mensaje ignorado para {phone_number} - enviado {abs(time_diff):.2f}s antes del último mensaje API (límite: {self.time_tolerance}s)")
         else:
             logger.info(f"[MESSAGE PROCESSOR] Mensaje aceptado para {phone_number} - diferencia: {time_diff:.2f}s")
         
