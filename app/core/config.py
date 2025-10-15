@@ -62,6 +62,7 @@ class Settings(BaseSettings):
     # Configuración de procesamiento de mensajes
     MESSAGE_PROCESSING_DELAY_SECONDS: int = 2
     MESSAGE_CONCATENATION_ENABLED: bool = True
+    MESSAGE_TIME_TOLERANCE_SECONDS: int = 300
     
     # Base de datos (SQLite por defecto, pero configurable)
     DATABASE_TYPE: str = "sqlite"  # sqlite, postgresql, mysql

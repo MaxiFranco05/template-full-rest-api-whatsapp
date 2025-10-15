@@ -30,8 +30,9 @@ class MessageProcessor:
         self.message_buffers: Dict[str, MessageBuffer] = {}
         self.processing_delay = settings.MESSAGE_PROCESSING_DELAY_SECONDS
         self.concatenation_enabled = settings.MESSAGE_CONCATENATION_ENABLED
+        self.time_tolerance = settings.MESSAGE_TIME_TOLERANCE_SECONDS
         
-        logger.info(f"[MESSAGE PROCESSOR] Inicializado con delay: {self.processing_delay}s, concatenación: {self.concatenation_enabled}")
+        logger.info(f"[MESSAGE PROCESSOR] Inicializado con delay: {self.processing_delay}s, concatenación: {self.concatenation_enabled}, tolerancia: {self.time_tolerance}s")
     
     def mark_api_message_sent(self, phone_number: str) -> None:
         """Marca que se envió un mensaje desde la API para este número"""
@@ -71,11 +72,13 @@ class MessageProcessor:
     
     def _is_message_valid_for_processing(self, message_data: Dict[str, Any], buffer: MessageBuffer) -> bool:
         """Verifica si un mensaje es válido para procesar"""
+        phone_number = buffer.phone_number
+        
         # Si no hay mensaje API previo, verificar si es un usuario nuevo
         if buffer.last_api_message_time is None:
             # Permitir procesar si es un usuario nuevo (primer mensaje)
             # Esto activará el sistema de bienvenida automática
-            logger.info(f"[MESSAGE PROCESSOR] Usuario nuevo detectado para {buffer.phone_number} - permitiendo procesamiento")
+            logger.info(f"[MESSAGE PROCESSOR] Usuario nuevo detectado para {phone_number} - permitiendo procesamiento")
             return True
         
         # Verificar si el mensaje llegó después del último mensaje API
@@ -87,14 +90,28 @@ class MessageProcessor:
             try:
                 message_time = datetime.fromtimestamp(int(message_timestamp))
             except (ValueError, TypeError):
-                logger.warning(f"[MESSAGE PROCESSOR] Timestamp inválido: {message_timestamp}")
+                logger.warning(f"[MESSAGE PROCESSOR] Timestamp inválido para {phone_number}: {message_timestamp}")
                 return False
         
-        # El mensaje debe haber llegado después del último mensaje API
-        is_valid = message_time >= buffer.last_api_message_time
+        # Calcular diferencia temporal
+        time_diff = (message_time - buffer.last_api_message_time).total_seconds()
+        
+        # Aplicar tolerancia temporal: permitir mensajes que llegaron hasta X segundos antes del último mensaje API
+        # Esto maneja casos donde mensajes llegan ligeramente tarde debido a latencia de red
+        tolerance_threshold = -self.time_tolerance  # Negativo porque queremos permitir mensajes "antiguos" hasta cierto punto
+        
+        is_valid = time_diff >= tolerance_threshold
+        
+        # Logging detallado para debugging
+        logger.info(f"[MESSAGE PROCESSOR] Validación temporal para {phone_number}:")
+        logger.info(f"  - Último mensaje API: {buffer.last_api_message_time}")
+        logger.info(f"  - Mensaje entrante: {message_time}")
+        logger.info(f"  - Diferencia temporal: {time_diff:.2f} segundos")
+        logger.info(f"  - Tolerancia: {tolerance_threshold} segundos")
+        logger.info(f"  - Válido: {is_valid}")
         
         if not is_valid:
-            logger.info(f"[MESSAGE PROCESSOR] Mensaje antiguo ignorado - API: {buffer.last_api_message_time}, Mensaje: {message_time}")
+            logger.info(f"[MESSAGE PROCESSOR] Mensaje muy antiguo ignorado para {phone_number} - diferencia: {time_diff:.2f}s (límite: {tolerance_threshold}s)")
         
         return is_valid
     
@@ -218,7 +235,8 @@ class MessageProcessor:
             "last_api_message_time": buffer.last_api_message_time.isoformat() if buffer.last_api_message_time else None,
             "processing_task_active": buffer.processing_task is not None and not buffer.processing_task.done(),
             "processing_delay": self.processing_delay,
-            "concatenation_enabled": self.concatenation_enabled
+            "concatenation_enabled": self.concatenation_enabled,
+            "time_tolerance_seconds": self.time_tolerance
         }
     
     def get_all_buffers_status(self) -> Dict[str, Dict[str, Any]]:

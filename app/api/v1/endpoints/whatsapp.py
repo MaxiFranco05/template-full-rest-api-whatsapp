@@ -245,7 +245,8 @@ async def get_message_processor_status():
             "status": "success",
             "processor_config": {
                 "processing_delay_seconds": message_processor.processing_delay,
-                "concatenation_enabled": message_processor.concatenation_enabled
+                "concatenation_enabled": message_processor.concatenation_enabled,
+                "time_tolerance_seconds": message_processor.time_tolerance
             },
             "buffers": status,
             "total_buffers": len(status)
