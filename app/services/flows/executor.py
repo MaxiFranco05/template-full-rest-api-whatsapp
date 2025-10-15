@@ -158,6 +158,10 @@ class FlowExecutor:
             # Process message template with variables
             message = self._process_template(step.message, conversation["variables"])
             
+            logger.info(f"Executing message step: {step.id}, type: {step.message_type.value}")
+            logger.info(f"Message: {message}")
+            logger.info(f"Metadata: {step.metadata}")
+            
             # Prepare additional parameters for different message types
             message_kwargs = {}
             if step.message_type.value != "text":
@@ -183,6 +187,8 @@ class FlowExecutor:
                 elif step.message_type.value == "contacts":
                     message_kwargs["contacts"] = metadata.get("contacts", [])
             
+            logger.info(f"Message kwargs: {message_kwargs}")
+            
             # Send message via WhatsApp
             send_result = await self.whatsapp_service.send_message(
                 to=conversation["phone_number"],
@@ -190,6 +196,8 @@ class FlowExecutor:
                 message_type=step.message_type.value,
                 **message_kwargs
             )
+            
+            logger.info(f"Send result: {send_result}")
             
             # Move to next step and execute it automatically
             if step.next_step:

@@ -386,7 +386,9 @@
       "id": "show_audio_example",
       "type": "message",
       "name": "Audio Message Example",
-      "message": "🎵 **Ejemplo de Mensaje con Audio:**\n\nLos mensajes de audio son ideales para:\n\n• Notas de voz\n• Música\n• Podcasts\n• Instrucciones habladas\n• Saludos personalizados\n\nWhatsApp soporta formatos MP3, M4A, OGG y WAV.",
+      "message": "🎵 Ejemplo de mensaje con audio real",
+      "message_type": "audio",
+      "audio_url": "https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3",
       "next_step": "back_to_message_types"
     },
     {
