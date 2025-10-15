@@ -357,14 +357,18 @@ class WhatsAppService:
                 interactive_data = message.get("interactive", {})
                 interactive_type = interactive_data.get("type")
                 
+                logger.info(f"Processing interactive message: type={interactive_type}, data={interactive_data}")
+                
                 if interactive_type == "button_reply":
                     # User clicked a button
                     button_reply = interactive_data.get("button_reply", {})
                     content = button_reply.get("id", "")  # This is the button ID
+                    logger.info(f"Button reply: id={content}")
                 elif interactive_type == "list_reply":
                     # User selected from a list
                     list_reply = interactive_data.get("list_reply", {})
                     content = list_reply.get("id", "")  # This is the list item ID
+                    logger.info(f"List reply: id={content}, full_reply={list_reply}")
                 else:
                     content = ""
                     logger.warning(f"Unknown interactive type: {interactive_type}")

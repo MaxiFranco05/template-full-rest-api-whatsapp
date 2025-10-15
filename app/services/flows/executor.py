@@ -77,6 +77,7 @@ class FlowExecutor:
         """Execute the current step in a conversation"""
         try:
             if conversation_id not in self.active_conversations:
+                logger.error(f"Conversation {conversation_id} not found")
                 return {
                     "success": False,
                     "error": f"Conversation {conversation_id} not found"
@@ -85,10 +86,31 @@ class FlowExecutor:
             return await self._execute_step(conversation_id, user_input)
             
         except Exception as e:
-            logger.error(f"Error executing step: {e}")
+            logger.error(f"Error executing step in conversation {conversation_id}: {e}", exc_info=True)
+            
+            # Send error message to user if we have conversation info
+            try:
+                if conversation_id in self.active_conversations:
+                    conversation = self.active_conversations[conversation_id]
+                    phone_number = conversation.get("phone_number")
+                    
+                    if phone_number:
+                        error_message = "❌ Lo siento, ocurrió un error en el sistema. Por favor intenta nuevamente o contacta soporte."
+                        
+                        await self.whatsapp_service.send_message(
+                            to=phone_number,
+                            message=error_message
+                        )
+                        
+                        logger.info(f"Error message sent to user {phone_number}")
+                        
+            except Exception as send_error:
+                logger.error(f"Failed to send error message to user: {send_error}")
+            
             return {
                 "success": False,
-                "error": str(e)
+                "error": str(e),
+                "user_notified": True
             }
     
     async def _execute_step(self, conversation_id: str, user_input: str = None) -> Dict[str, Any]:
@@ -176,10 +198,23 @@ class FlowExecutor:
                 }
             
         except Exception as e:
-            logger.error(f"Error executing message step: {e}")
+            logger.error(f"Error executing message step: {e}", exc_info=True)
+            
+            # Send error message to user
+            try:
+                error_message = "❌ Lo siento, ocurrió un error al enviar el mensaje. Por favor intenta nuevamente."
+                await self.whatsapp_service.send_message(
+                    to=conversation["phone_number"],
+                    message=error_message
+                )
+                logger.info(f"Error message sent to user {conversation['phone_number']}")
+            except Exception as send_error:
+                logger.error(f"Failed to send error message to user: {send_error}")
+            
             return {
                 "success": False,
-                "error": str(e)
+                "error": str(e),
+                "user_notified": True
             }
     
     async def _execute_question_step(self, conversation: Dict[str, Any], step: FlowStep) -> Dict[str, Any]:
@@ -204,21 +239,36 @@ class FlowExecutor:
             }
             
         except Exception as e:
-            logger.error(f"Error executing question step: {e}")
+            logger.error(f"Error executing question step: {e}", exc_info=True)
+            
+            # Send error message to user
+            try:
+                error_message = "❌ Lo siento, ocurrió un error al procesar tu pregunta. Por favor intenta nuevamente."
+                await self.whatsapp_service.send_message(
+                    to=conversation["phone_number"],
+                    message=error_message
+                )
+                logger.info(f"Error message sent to user {conversation['phone_number']}")
+            except Exception as send_error:
+                logger.error(f"Failed to send error message to user: {send_error}")
+            
             return {
                 "success": False,
-                "error": str(e)
+                "error": str(e),
+                "user_notified": True
             }
     
     async def _execute_choice_step(self, conversation: Dict[str, Any], step: FlowStep, user_input: str = None) -> Dict[str, Any]:
         """Execute a choice step"""
         try:
-            logger.info(f"Executing choice step with user_input: '{user_input}'")
+            logger.info(f"Executing choice step: {step.id} with user_input: '{user_input}'")
             logger.info(f"Step conditions: {step.conditions}")
+            logger.info(f"Current conversation step: {conversation.get('current_step', 'unknown')}")
             
             # If user input is provided, process conditions
             if user_input:
                 logger.info(f"Processing conditions for user input: '{user_input}'")
+                logger.info(f"Available conditions: {[c['condition'] for c in step.conditions]}")
                 # Process conditions to determine next step
                 for condition in step.conditions:
                     logger.info(f"Checking condition: {condition}")
@@ -266,8 +316,11 @@ class FlowExecutor:
                 max_rows_per_section = 10
                 sections = []
                 
+                logger.info(f"Processing {len(step.options)} options with max {max_rows_per_section} rows per section")
+                
                 if len(step.options) <= max_rows_per_section:
                     # Single section
+                    logger.info("Creating single section")
                     sections = [{
                         "title": "Opciones",
                         "rows": []
@@ -282,6 +335,7 @@ class FlowExecutor:
                 else:
                     # Multiple sections - split options into groups of max_rows_per_section
                     section_count = (len(step.options) + max_rows_per_section - 1) // max_rows_per_section
+                    logger.info(f"Creating {section_count} sections")
                     
                     for i in range(section_count):
                         start_idx = i * max_rows_per_section
@@ -294,6 +348,8 @@ class FlowExecutor:
                             "rows": []
                         }
                         
+                        logger.info(f"Section {i+1}: {len(section_options)} options (indices {start_idx}-{end_idx-1})")
+                        
                         for option in section_options:
                             section["rows"].append({
                                 "id": option["id"],
@@ -302,6 +358,8 @@ class FlowExecutor:
                             })
                         
                         sections.append(section)
+                
+                logger.info(f"Created {len(sections)} sections with total rows: {sum(len(s['rows']) for s in sections)}")
                 
                 # Get button text from metadata or use default
                 button_text = step.metadata.get("button_text", "Ver Opciones")
@@ -313,6 +371,30 @@ class FlowExecutor:
                     button_text=button_text,
                     sections=sections
                 )
+                
+                # Check if the message was sent successfully
+                if not send_result.get("success", False):
+                    logger.error(f"Failed to send interactive list message: {send_result}")
+                    # Send fallback text message with options
+                    fallback_message = f"{message}\n\nSelecciona una opción escribiendo el número:\n"
+                    for i, option in enumerate(step.options, 1):
+                        fallback_message += f"{i}. {option['title']}\n"
+                    
+                    fallback_result = await self.whatsapp_service.send_message(
+                        to=conversation["phone_number"],
+                        message=fallback_message
+                    )
+                    
+                    if fallback_result.get("success", False):
+                        logger.info("Fallback text message sent successfully")
+                        send_result = fallback_result
+                    else:
+                        logger.error(f"Failed to send fallback message: {fallback_result}")
+                        return {
+                            "success": False,
+                            "error": "Failed to send interactive message and fallback",
+                            "details": send_result
+                        }
             else:
                 # Use buttons format (default)
                 logger.info(f"Using buttons format (specified in JSON) for {len(step.options)} options")
@@ -332,6 +414,30 @@ class FlowExecutor:
                     body_text="Selecciona una opción:",
                     buttons=buttons
                 )
+                
+                # Check if the message was sent successfully
+                if not send_result.get("success", False):
+                    logger.error(f"Failed to send interactive button message: {send_result}")
+                    # Send fallback text message with options
+                    fallback_message = f"{message}\n\nSelecciona una opción escribiendo el número:\n"
+                    for i, option in enumerate(step.options, 1):
+                        fallback_message += f"{i}. {option['title']}\n"
+                    
+                    fallback_result = await self.whatsapp_service.send_message(
+                        to=conversation["phone_number"],
+                        message=fallback_message
+                    )
+                    
+                    if fallback_result.get("success", False):
+                        logger.info("Fallback text message sent successfully")
+                        send_result = fallback_result
+                    else:
+                        logger.error(f"Failed to send fallback message: {fallback_result}")
+                        return {
+                            "success": False,
+                            "error": "Failed to send interactive message and fallback",
+                            "details": send_result
+                        }
             
             # Stay on same step to wait for user choice
             return {
@@ -343,10 +449,23 @@ class FlowExecutor:
             }
             
         except Exception as e:
-            logger.error(f"Error executing choice step: {e}")
+            logger.error(f"Error executing choice step: {e}", exc_info=True)
+            
+            # Send error message to user
+            try:
+                error_message = "❌ Lo siento, ocurrió un error al procesar tu selección. Por favor intenta nuevamente."
+                await self.whatsapp_service.send_message(
+                    to=conversation["phone_number"],
+                    message=error_message
+                )
+                logger.info(f"Error message sent to user {conversation['phone_number']}")
+            except Exception as send_error:
+                logger.error(f"Failed to send error message to user: {send_error}")
+            
             return {
                 "success": False,
-                "error": str(e)
+                "error": str(e),
+                "user_notified": True
             }
     
     async def _execute_condition_step(self, conversation: Dict[str, Any], step: FlowStep, user_input: str) -> Dict[str, Any]:

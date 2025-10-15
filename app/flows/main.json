@@ -111,19 +111,9 @@
           "description": "Mensajes con información de contacto"
         },
         {
-          "id": "reaction_message",
-          "title": "👍 Reacción",
-          "description": "Mensajes de reacción con emojis"
-        },
-        {
           "id": "catalog_message",
           "title": "🛍️ Catálogo",
           "description": "Mensajes con productos estructurados"
-        },
-        {
-          "id": "flow_message",
-          "title": "🔄 Flujo",
-          "description": "Mensajes con experiencias interactivas"
         }
       ],
       "conditions": [
@@ -179,9 +169,80 @@
     },
     {
       "id": "show_text_example",
-      "type": "message",
+      "type": "choice",
       "name": "Text Message Example",
-      "message": "📝 **Ejemplo de Mensaje de Texto:**\n\nEste es un mensaje de texto simple. Puede incluir:\n• Texto plano\n• **Texto en negrita**\n• *Texto en cursiva*\n• Emojis 😊\n• Variables: {{user_name}}\n• Saltos de línea\n\nLos mensajes de texto son ideales para información general, instrucciones o respuestas simples.",
+      "message": "📝 Mensajes de Texto",
+      "message_type": "list",
+      "choice_type": "list",
+      "button_text": "Ver Ejemplos",
+      "options": [
+        {
+          "id": "text_basic",
+          "title": "📄 Texto Básico",
+          "description": "Mensaje de texto simple"
+        },
+        {
+          "id": "text_formatted",
+          "title": "✨ Texto Formateado",
+          "description": "Con negrita, cursiva y emojis"
+        },
+        {
+          "id": "text_variables",
+          "title": "🔧 Con Variables",
+          "description": "Personalización dinámica"
+        },
+        {
+          "id": "text_multiline",
+          "title": "📋 Multilínea",
+          "description": "Mensajes largos estructurados"
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "user_choice == 'text_basic'",
+          "next_step": "text_basic_example"
+        },
+        {
+          "condition": "user_choice == 'text_formatted'",
+          "next_step": "text_formatted_example"
+        },
+        {
+          "condition": "user_choice == 'text_variables'",
+          "next_step": "text_variables_example"
+        },
+        {
+          "condition": "user_choice == 'text_multiline'",
+          "next_step": "text_multiline_example"
+        }
+      ],
+      "next_step": "back_to_message_types"
+    },
+    {
+      "id": "text_basic_example",
+      "type": "message",
+      "name": "Text Basic Example",
+      "message": "📄 **Texto Básico:**\n\nHola! Este es un mensaje de texto simple.\n\nLos mensajes de texto son la forma más básica de comunicación en WhatsApp Business API. Son ideales para:\n• Saludos\n• Información general\n• Respuestas simples\n• Notificaciones",
+      "next_step": "back_to_message_types"
+    },
+    {
+      "id": "text_formatted_example",
+      "type": "message",
+      "name": "Text Formatted Example",
+      "message": "✨ **Texto Formateado:**\n\n*Este texto está en cursiva*\n**Este texto está en negrita**\n~~Este texto está tachado~~\n\n`Este texto está en código`\n\n```\nEste es un bloque de código\ncon múltiples líneas\n```\n\n🔤 **Caracteres especiales:**\n• Emojis: 😊 🎉 🚀\n• Símbolos: ★ ☆ ♥ ♦\n• Flechas: → ← ↑ ↓",
+      "next_step": "back_to_message_types"
+    },
+    {
+      "id": "text_variables_example",
+      "type": "message",
+      "name": "Text Variables Example",
+      "message": "🔧 **Con Variables:**\n\nHola {{user_name}}! 👋\n\nTu pedido #{{order_id}} está listo.\n\n📦 **Detalles del pedido:**\n• Producto: {{product_name}}\n• Cantidad: {{quantity}}\n• Precio: ${{price}}\n• Fecha: {{order_date}}\n\n¡Gracias por elegirnos! 🙏\n\n*Las variables se reemplazan dinámicamente con datos reales del usuario.*",
+      "next_step": "back_to_message_types"
+    },
+    {
+      "id": "text_multiline_example",
+      "type": "message",
+      "name": "Text Multiline Example",
+      "message": "📋 **Mensaje Multilínea:**\n\n🏪 **BIENVENIDO A NUESTRA TIENDA**\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n📱 **HORARIOS DE ATENCIÓN:**\n• Lunes a Viernes: 9:00 AM - 7:00 PM\n• Sábados: 10:00 AM - 5:00 PM\n• Domingos: Cerrado\n\n📞 **CONTACTO:**\n• WhatsApp: +1-555-0123\n• Email: info@tienda.com\n• Web: www.tienda.com\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n💡 **TIP:** Los mensajes largos son perfectos para información detallada, términos y condiciones, o instrucciones paso a paso.",
       "next_step": "back_to_message_types"
     },
     {
