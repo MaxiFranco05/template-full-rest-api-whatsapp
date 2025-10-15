@@ -250,6 +250,8 @@
       "type": "choice",
       "name": "Button Message Example",
       "message": "🔘 Ejemplo de Mensaje con Botones:\n\nLos botones permiten elegir entre opciones predefinidas.\n\n¿Qué opción prefieres?",
+      "message_type": "buttons",
+      "choice_type": "buttons",
       "options": [
         {
           "id": "option1",
@@ -267,15 +269,15 @@
       "conditions": [
         {
           "condition": "user_choice == 'option1'",
-          "next_step": "button_response_1"
+          "next_step": "back_to_message_types"
         },
         {
           "condition": "user_choice == 'option2'",
-          "next_step": "button_response_2"
+          "next_step": "back_to_message_types"
         },
         {
           "condition": "user_choice == 'option3'",
-          "next_step": "button_response_3"
+          "next_step": "back_to_message_types"
         }
       ]
     },
