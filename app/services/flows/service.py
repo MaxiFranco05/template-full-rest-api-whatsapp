@@ -3,7 +3,7 @@ WhatsApp Flow Service
 Service for managing WhatsApp conversation flows using active flow configuration
 """
 import logging
-from app.services.flows.builder import create_flow_executor
+from app.services.flows.executor import FlowExecutor
 from app.services.flows.loader import create_unified_flow_loader
 from app.services.flows.active_flow_manager import active_flow_manager
 
@@ -16,7 +16,7 @@ class WhatsAppFlowService:
     def __init__(self, whatsapp_service, persistence_service):
         self.whatsapp_service = whatsapp_service
         self.persistence_service = persistence_service
-        self.flow_executor = create_flow_executor(whatsapp_service, persistence_service)
+        self.flow_executor = FlowExecutor(whatsapp_service, persistence_service)
         self.unified_loader = create_unified_flow_loader("app/flows")
         
         # Load flows from JSON and YAML files
@@ -51,7 +51,7 @@ class WhatsAppFlowService:
         
         raise ValueError("No flows available")
     
-    def start_conversation(self, phone_number: str, flow_id: str = None, 
+    async def start_conversation(self, phone_number: str, flow_id: str = None, 
                           initial_data: dict = None) -> dict:
         """Start a conversation with a specific flow or active flow"""
         try:
@@ -59,7 +59,7 @@ class WhatsAppFlowService:
             if flow_id is None:
                 flow_id = self.get_active_flow_id()
             
-            result = self.flow_executor.start_conversation(
+            result = await self.flow_executor.start_conversation(
                 phone_number=phone_number,
                 flow_id=flow_id,
                 initial_data=initial_data or {}
@@ -77,7 +77,7 @@ class WhatsAppFlowService:
                 "error": str(e)
             }
     
-    def process_message(self, phone_number: str, message_content: str) -> dict:
+    async def process_message(self, phone_number: str, message_content: str) -> dict:
         """Process incoming message using active flow"""
         try:
             logger.info(f"Processing message from {phone_number}: '{message_content}'")
@@ -89,11 +89,11 @@ class WhatsAppFlowService:
                 # Start conversation with active flow
                 active_flow_id = self.get_active_flow_id()
                 logger.info(f"Starting new conversation for {phone_number} with flow {active_flow_id}")
-                return self.start_conversation(phone_number, active_flow_id)
+                return await self.start_conversation(phone_number, active_flow_id)
             
             # Process message in existing conversation
             logger.info(f"Processing message in existing conversation {conversation_id}")
-            result = self.flow_executor.execute_step(
+            result = await self.flow_executor.execute_step(
                 conversation_id=conversation_id,
                 user_input=message_content
             )
@@ -113,14 +113,10 @@ class WhatsAppFlowService:
     def _find_conversation(self, phone_number: str) -> str:
         """Find active conversation for phone number"""
         try:
-            # Query database for active conversation
             conversation_id = f"{phone_number}_flow_conversation"
             
-            # Check if conversation exists in database
-            if self.persistence_service:
-                # Try to find existing conversation
-                # For now, we'll use a simple approach
-                # In a real implementation, you'd query the database
+            # Check if conversation exists in flow executor
+            if conversation_id in self.flow_executor.active_conversations:
                 return conversation_id
             
             return None

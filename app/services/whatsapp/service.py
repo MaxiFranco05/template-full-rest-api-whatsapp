@@ -26,6 +26,14 @@ class WhatsAppService:
         self.verify_token = settings.WHATSAPP_WEBHOOK_VERIFY_TOKEN
         self.message_sender = create_message_sender(self)
         self.message_templates = create_message_templates()
+        self._flow_service = None
+    
+    def get_flow_service(self, persistence_service):
+        """Get or create WhatsAppFlowService instance"""
+        if self._flow_service is None:
+            from app.services.flows.service import WhatsAppFlowService
+            self._flow_service = WhatsAppFlowService(self, persistence_service)
+        return self._flow_service
     
     @handle_errors("WHATSAPP_SEND_ERROR")
     async def send_message(
@@ -165,6 +173,88 @@ class WhatsAppService:
                 "error": str(e)
             }
     
+    @handle_errors("WHATSAPP_SEND_ERROR")
+    async def send_interactive_message(
+        self, 
+        to: str, 
+        header_text: str,
+        body_text: str,
+        buttons: List[Dict[str, str]]
+    ) -> Dict[str, Any]:
+        """Send interactive message with buttons through WhatsApp Business API"""
+        try:
+            url = f"{self.api_url}/{self.phone_number_id}/messages"
+            
+            headers = {
+                "Authorization": f"Bearer {self.access_token}",
+                "Content-Type": "application/json"
+            }
+            
+            # Format buttons for WhatsApp API
+            formatted_buttons = []
+            for button in buttons[:3]:  # WhatsApp allows max 3 buttons
+                formatted_buttons.append({
+                    "type": "reply",
+                    "reply": {
+                        "id": button["id"],
+                        "title": button["title"]
+                    }
+                })
+            
+            payload = {
+                "messaging_product": "whatsapp",
+                "to": to,
+                "type": "interactive",
+                "interactive": {
+                    "type": "button",
+                    "header": {
+                        "type": "text",
+                        "text": header_text
+                    },
+                    "body": {
+                        "text": body_text
+                    },
+                    "action": {
+                        "buttons": formatted_buttons
+                    }
+                }
+            }
+            
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, headers=headers, json=payload) as response:
+                    response_data = await response.json()
+                    
+                    if response.status == 200:
+                        logger.info(f"Interactive message sent successfully to {to}")
+                        return {
+                            "success": True,
+                            "message_id": response_data.get("messages", [{}])[0].get("id"),
+                            "response": response_data
+                        }
+                    else:
+                        logger.error(f"Failed to send interactive message: {response_data}")
+                        return {
+                            "success": False,
+                            "error": response_data.get("error", {}).get("message", "Unknown error"),
+                            "response": response_data
+                        }
+                        
+        except Exception as e:
+            logger.error(f"Error sending interactive message: {e}")
+            # Log de desarrollo: mostrar error detallado del envío interactivo
+            if settings.DEBUG:
+                logger.error(f"[DESARROLLO] Error enviando mensaje interactivo - Destinatario: {to}")
+                logger.error(f"[DESARROLLO] Error enviando mensaje interactivo - Header: {header_text}")
+                logger.error(f"[DESARROLLO] Error enviando mensaje interactivo - Body: {body_text}")
+                logger.error(f"[DESARROLLO] Error enviando mensaje interactivo - Botones: {json.dumps(buttons, indent=2, ensure_ascii=False)}")
+                logger.error(f"[DESARROLLO] Error enviando mensaje interactivo - Payload: {json.dumps(payload, indent=2, ensure_ascii=False, default=str)}")
+                logger.error(f"[DESARROLLO] Error enviando mensaje interactivo - Excepción completa: {str(e)}")
+                logger.error(f"[DESARROLLO] Error enviando mensaje interactivo - Tipo de excepción: {type(e).__name__}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
+    
     def verify_webhook(self, mode: str, token: str, challenge: str) -> Optional[str]:
         """Verify webhook token"""
 
@@ -245,6 +335,24 @@ class WhatsAppService:
             
             if message_type == "text":
                 content = message.get("text", {}).get("body", "")
+            elif message_type == "interactive":
+                # Process interactive messages (buttons, lists)
+                interactive_data = message.get("interactive", {})
+                interactive_type = interactive_data.get("type")
+                
+                if interactive_type == "button_reply":
+                    # User clicked a button
+                    button_reply = interactive_data.get("button_reply", {})
+                    content = button_reply.get("id", "")  # This is the button ID
+                    logger.info(f"[DESARROLLO] Button clicked: {content}")
+                elif interactive_type == "list_reply":
+                    # User selected from a list
+                    list_reply = interactive_data.get("list_reply", {})
+                    content = list_reply.get("id", "")  # This is the list item ID
+                    logger.info(f"[DESARROLLO] List item selected: {content}")
+                else:
+                    content = ""
+                    logger.warning(f"[DESARROLLO] Unknown interactive type: {interactive_type}")
             elif message_type == "image":
                 media_url = message.get("image", {}).get("id")
                 content = message.get("image", {}).get("caption", "")
@@ -407,12 +515,10 @@ class WhatsAppService:
             saved_message = persistence_service.save_message(db_conversation.id, inbound_message_data)
             
             # Usar el sistema de flows para procesar el mensaje
-            from app.services.flows.service import WhatsAppFlowService
-            
-            flow_service = WhatsAppFlowService(self, persistence_service)
+            flow_service = self.get_flow_service(persistence_service)
             
             # Procesar mensaje con el flow activo
-            result = flow_service.process_message(from_number, content)
+            result = await flow_service.process_message(from_number, content)
             
             if result.get("success"):
                 # Log de desarrollo: mostrar resultado del flow

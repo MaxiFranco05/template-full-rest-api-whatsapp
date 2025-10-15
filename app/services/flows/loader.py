@@ -134,9 +134,10 @@ class UnifiedFlowLoader:
             options = step_config["options"]
             choice_type = step_config.get("choice_type", "buttons")
             next_step = step_config.get("next_step")
+            conditions = step_config.get("conditions", [])
             
             if choice_type == "buttons":
-                builder.add_choice_step(step_id, name, message, options, next_step)
+                builder.add_choice_step(step_id, name, message, options, next_step, conditions)
             elif choice_type == "list":
                 button_text = step_config.get("button_text", "Ver opciones")
                 builder.add_list_step(step_id, name, message, options, button_text, next_step)

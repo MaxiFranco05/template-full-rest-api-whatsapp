@@ -24,7 +24,7 @@ class FlowExecutor:
         self.active_flows[flow.id] = flow
         logger.info(f"Flow registered: {flow.id} - {flow.name}")
     
-    def start_conversation(self, phone_number: str, flow_id: str, initial_data: Dict[str, Any] = None) -> Dict[str, Any]:
+    async def start_conversation(self, phone_number: str, flow_id: str, initial_data: Dict[str, Any] = None) -> Dict[str, Any]:
         """Start a new conversation with a flow"""
         try:
             if flow_id not in self.active_flows:
@@ -52,7 +52,7 @@ class FlowExecutor:
             self.active_conversations[conversation_id] = conversation_state
             
             # Execute the first step
-            result = self._execute_step(conversation_id, None)
+            result = await self._execute_step(conversation_id, None)
             
             return {
                 "success": True,
@@ -61,7 +61,9 @@ class FlowExecutor:
                 "current_step": flow.start_step,
                 "whatsapp_result": result.get("whatsapp_result"),
                 "message": result.get("message", "Conversation started"),
-                "conversation_state": "active"
+                "conversation_state": "active",
+                "next_step_result": result.get("next_step_result"),
+                "next_step_error": result.get("next_step_error")
             }
             
         except Exception as e:
@@ -71,7 +73,7 @@ class FlowExecutor:
                 "error": str(e)
             }
     
-    def execute_step(self, conversation_id: str, user_input: str = None) -> Dict[str, Any]:
+    async def execute_step(self, conversation_id: str, user_input: str = None) -> Dict[str, Any]:
         """Execute the current step in a conversation"""
         try:
             if conversation_id not in self.active_conversations:
@@ -80,7 +82,7 @@ class FlowExecutor:
                     "error": f"Conversation {conversation_id} not found"
                 }
             
-            return self._execute_step(conversation_id, user_input)
+            return await self._execute_step(conversation_id, user_input)
             
         except Exception as e:
             logger.error(f"Error executing step: {e}")
@@ -89,7 +91,7 @@ class FlowExecutor:
                 "error": str(e)
             }
     
-    def _execute_step(self, conversation_id: str, user_input: str = None) -> Dict[str, Any]:
+    async def _execute_step(self, conversation_id: str, user_input: str = None) -> Dict[str, Any]:
         """Internal method to execute a step"""
         conversation = self.active_conversations[conversation_id]
         flow = self.active_flows[conversation["flow_id"]]
@@ -113,46 +115,65 @@ class FlowExecutor:
         
         # Execute step based on type
         if step.type == FlowStepType.MESSAGE:
-            return self._execute_message_step(conversation, step)
+            return await self._execute_message_step(conversation, step)
         elif step.type == FlowStepType.QUESTION:
-            return self._execute_question_step(conversation, step)
+            return await self._execute_question_step(conversation, step)
         elif step.type == FlowStepType.CHOICE:
-            return self._execute_choice_step(conversation, step)
+            return await self._execute_choice_step(conversation, step, user_input)
         elif step.type == FlowStepType.CONDITION:
-            return self._execute_condition_step(conversation, step, user_input)
+            return await self._execute_condition_step(conversation, step, user_input)
         elif step.type == FlowStepType.END:
-            return self._execute_end_step(conversation, step)
+            return await self._execute_end_step(conversation, step)
         else:
             return {
                 "success": False,
                 "error": f"Unsupported step type: {step.type}"
             }
     
-    def _execute_message_step(self, conversation: Dict[str, Any], step: FlowStep) -> Dict[str, Any]:
+    async def _execute_message_step(self, conversation: Dict[str, Any], step: FlowStep) -> Dict[str, Any]:
         """Execute a message step"""
         try:
             # Process message template with variables
             message = self._process_template(step.message, conversation["variables"])
             
             # Send message via WhatsApp
-            import asyncio
-            send_result = asyncio.run(self.whatsapp_service.send_message(
+            send_result = await self.whatsapp_service.send_message(
                 to=conversation["phone_number"],
                 message=message
-            ))
+            )
             
-            # Move to next step
+            # Move to next step and execute it automatically
             if step.next_step:
                 conversation["current_step"] = step.next_step
+                logger.info(f"Moving to next step: {step.next_step}")
+                # Execute the next step automatically
+                try:
+                    next_result = await self._execute_step(conversation["conversation_id"], None)
+                    logger.info(f"Next step executed successfully: {next_result}")
+                    return {
+                        "success": True,
+                        "message": message,
+                        "whatsapp_result": send_result,
+                        "next_step": step.next_step,
+                        "next_step_result": next_result
+                    }
+                except Exception as e:
+                    logger.error(f"Error executing next step {step.next_step}: {e}")
+                    return {
+                        "success": True,
+                        "message": message,
+                        "whatsapp_result": send_result,
+                        "next_step": step.next_step,
+                        "next_step_error": str(e)
+                    }
             else:
                 conversation["current_step"] = "end"
-            
-            return {
-                "success": True,
-                "message": message,
-                "whatsapp_result": send_result,
-                "next_step": step.next_step
-            }
+                return {
+                    "success": True,
+                    "message": message,
+                    "whatsapp_result": send_result,
+                    "next_step": "end"
+                }
             
         except Exception as e:
             logger.error(f"Error executing message step: {e}")
@@ -161,18 +182,17 @@ class FlowExecutor:
                 "error": str(e)
             }
     
-    def _execute_question_step(self, conversation: Dict[str, Any], step: FlowStep) -> Dict[str, Any]:
+    async def _execute_question_step(self, conversation: Dict[str, Any], step: FlowStep) -> Dict[str, Any]:
         """Execute a question step"""
         try:
             # Process question template
             question = self._process_template(step.question, conversation["variables"])
             
             # Send question via WhatsApp
-            import asyncio
-            send_result = asyncio.run(self.whatsapp_service.send_message(
+            send_result = await self.whatsapp_service.send_message(
                 to=conversation["phone_number"],
                 message=question
-            ))
+            )
             
             # Stay on same step to wait for user input
             return {
@@ -190,31 +210,52 @@ class FlowExecutor:
                 "error": str(e)
             }
     
-    def _execute_choice_step(self, conversation: Dict[str, Any], step: FlowStep) -> Dict[str, Any]:
+    async def _execute_choice_step(self, conversation: Dict[str, Any], step: FlowStep, user_input: str = None) -> Dict[str, Any]:
         """Execute a choice step"""
         try:
-            # Process message template
+            logger.info(f"Executing choice step with user_input: '{user_input}'")
+            logger.info(f"Step conditions: {step.conditions}")
+            
+            # If user input is provided, process conditions
+            if user_input:
+                logger.info(f"Processing conditions for user input: '{user_input}'")
+                # Process conditions to determine next step
+                for condition in step.conditions:
+                    logger.info(f"Checking condition: {condition}")
+                    if self._evaluate_condition(condition["condition"], conversation, user_input):
+                        logger.info(f"Condition matched: {condition['condition']} -> {condition['next_step']}")
+                        conversation["current_step"] = condition["next_step"]
+                        # Execute the next step
+                        return await self._execute_step(conversation["conversation_id"], None)
+                
+                # No condition matched, stay on same step
+                logger.info("No condition matched, staying on same step")
+                return {
+                    "success": True,
+                    "message": "Opción no válida. Por favor selecciona una opción válida.",
+                    "waiting_for_input": True,
+                    "current_step": conversation["current_step"]
+                }
+            
+            # No user input, send interactive buttons
+            logger.info("No user input, sending interactive buttons")
             message = self._process_template(step.message, conversation["variables"])
             
             # Create interactive buttons
             buttons = []
             for option in step.options:
                 buttons.append({
-                    "type": "reply",
-                    "reply": {
-                        "id": option["id"],
-                        "title": option["title"]
-                    }
+                    "id": option["id"],
+                    "title": option["title"]
                 })
             
             # Send interactive message
-            import asyncio
-            send_result = asyncio.run(self.whatsapp_service.send_interactive_message(
+            send_result = await self.whatsapp_service.send_interactive_message(
                 to=conversation["phone_number"],
                 header_text=message,
                 body_text="Selecciona una opción:",
                 buttons=buttons
-            ))
+            )
             
             # Stay on same step to wait for user choice
             return {
@@ -232,19 +273,19 @@ class FlowExecutor:
                 "error": str(e)
             }
     
-    def _execute_condition_step(self, conversation: Dict[str, Any], step: FlowStep, user_input: str) -> Dict[str, Any]:
+    async def _execute_condition_step(self, conversation: Dict[str, Any], step: FlowStep, user_input: str) -> Dict[str, Any]:
         """Execute a condition step"""
         try:
             # Evaluate conditions
             for condition in step.conditions:
                 if self._evaluate_condition(condition["condition"], conversation, user_input):
                     conversation["current_step"] = condition["next_step"]
-                    return self._execute_step(conversation["conversation_id"], user_input)
+                    return await self._execute_step(conversation["conversation_id"], user_input)
             
             # No condition matched, use default next step
             if step.next_step:
                 conversation["current_step"] = step.next_step
-                return self._execute_step(conversation["conversation_id"], user_input)
+                return await self._execute_step(conversation["conversation_id"], user_input)
             else:
                 return {
                     "success": False,
@@ -258,18 +299,17 @@ class FlowExecutor:
                 "error": str(e)
             }
     
-    def _execute_end_step(self, conversation: Dict[str, Any], step: FlowStep) -> Dict[str, Any]:
+    async def _execute_end_step(self, conversation: Dict[str, Any], step: FlowStep) -> Dict[str, Any]:
         """Execute an end step"""
         try:
             # Process end message template
             message = self._process_template(step.message, conversation["variables"])
             
             # Send final message
-            import asyncio
-            send_result = asyncio.run(self.whatsapp_service.send_message(
+            send_result = await self.whatsapp_service.send_message(
                 to=conversation["phone_number"],
                 message=message
-            ))
+            )
             
             # Mark conversation as ended
             conversation["current_step"] = "ended"
@@ -304,12 +344,22 @@ class FlowExecutor:
     def _evaluate_condition(self, condition: str, conversation: Dict[str, Any], user_input: str) -> bool:
         """Evaluate a condition string"""
         try:
+            logger.info(f"Evaluating condition: '{condition}' with user_input: '{user_input}'")
+            
             # Simple condition evaluation
-            # For now, just check if user input matches expected values
             if "is_first_message" in condition:
                 return len(conversation["step_history"]) == 1
             
-            # Add more condition types as needed
+            # Handle user choice conditions
+            if "user_choice" in condition:
+                # Extract the expected value from condition like "user_choice == 'help'"
+                if "==" in condition:
+                    expected_value = condition.split("==")[1].strip().strip("'\"")
+                    result = user_input.lower().strip() == expected_value.lower().strip()
+                    logger.info(f"Condition '{condition}' evaluated to: {result} (expected: '{expected_value}', got: '{user_input}')")
+                    return result
+            
+            # Handle other conditions as needed
             return False
             
         except Exception as e:

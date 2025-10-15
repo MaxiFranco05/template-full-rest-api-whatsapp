@@ -119,7 +119,8 @@ class FlowBuilder:
     
     def add_choice_step(self, step_id: str, name: str, message: str,
                        options: List[Dict[str, str]],
-                       next_step: Optional[str] = None) -> 'FlowBuilder':
+                       next_step: Optional[str] = None,
+                       conditions: Optional[List[Dict[str, Any]]] = None) -> 'FlowBuilder':
         """Add a choice step"""
         step = FlowStep(
             id=step_id,
@@ -128,7 +129,8 @@ class FlowBuilder:
             message=message,
             message_type=MessageType.BUTTONS,
             options=options,
-            next_step=next_step
+            next_step=next_step,
+            conditions=conditions or []
         )
         return self.add_step(step)
     
