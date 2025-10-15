@@ -375,7 +375,11 @@
       "id": "show_document_example",
       "type": "message",
       "name": "Document Message Example",
-      "message": "📄 **Ejemplo de Mensaje con Documento:**\n\nLos mensajes con documentos pueden incluir:\n\n• PDFs\n• Archivos de Word\n• Hojas de cálculo\n• Presentaciones\n• Archivos de texto\n\nPerfectos para compartir manuales, contratos o cualquier archivo.",
+      "message": "📄 Ejemplo de mensaje con documento real",
+      "message_type": "document",
+      "document_url": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+      "filename": "documento_prueba.pdf",
+      "caption": "Este es un documento PDF enviado usando el tipo 'document' nativo de WhatsApp. Los mensajes con documentos pueden incluir PDFs, archivos de Word, hojas de cálculo, presentaciones y archivos de texto.",
       "next_step": "back_to_message_types"
     },
     {
