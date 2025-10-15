@@ -593,9 +593,43 @@ class WhatsAppService:
                     "flow_result": result
                 }
             else:
-                # Si el flow falló, usar lógica de fallback
+                # Si el flow falló, ejecutar el nodo de error del flow
                 logger.warning(f"Flow processing failed: {result.get('error')}")
-                return await self._fallback_message_processing(message_data, db_session, user, db_conversation, persistence_service)
+                
+                # Intentar ejecutar el nodo de error del flow
+                try:
+                    from app.services.flows.service import WhatsAppFlowService
+                    flow_service = WhatsAppFlowService()
+                    
+                    # Obtener información del usuario y conversación
+                    from_number = message_data.get("from")
+                    conversation_id = f"whatsapp_{from_number}"
+                    
+                    # Ejecutar el nodo de error del flow
+                    error_result = await flow_service.execute_error_fallback(
+                        conversation_id, 
+                        result.get("error", "Error desconocido")
+                    )
+                    
+                    if error_result.get("success"):
+                        return {
+                            "success": True,
+                            "response_sent": True,
+                            "message": "Error handled by flow fallback",
+                            "conversation_state": "error_handled",
+                            "user_id": user.id,
+                            "conversation_id": db_conversation.id,
+                            "error_handled": True
+                        }
+                    else:
+                        # Si el nodo de error también falla, usar fallback genérico
+                        logger.warning(f"Flow error fallback failed: {error_result.get('error')}")
+                        return await self._fallback_message_processing(message_data, db_session, user, db_conversation, persistence_service)
+                        
+                except Exception as error_fallback_error:
+                    logger.error(f"Error en fallback del flow: {str(error_fallback_error)}")
+                    # Último recurso: usar fallback genérico
+                    return await self._fallback_message_processing(message_data, db_session, user, db_conversation, persistence_service)
                     
         except Exception as e:
             logger.error(f"Error procesando mensaje entrante: {str(e)}")
@@ -624,7 +658,7 @@ class WhatsAppService:
                     "content": content
                 })
                 
-                welcome_message = "¡Hola! Bienvenido/a. ¿En qué puedo ayudarte?"
+                welcome_message = "¿En qué puedo ayudarte?"
                 
                 # Enviar mensaje de bienvenida
                 send_result = await self.send_message(from_number, welcome_message)

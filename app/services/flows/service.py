@@ -152,3 +152,66 @@ class WhatsAppFlowService:
             return self.get_flow_info(active_flow_id)
         except Exception as e:
             return {"error": str(e)}
+    
+    async def execute_error_fallback(self, conversation_id: str, error_message: str) -> dict:
+        """Execute the error fallback node when a flow fails"""
+        try:
+            # Obtener el executor del flow activo
+            executor = self.get_executor()
+            if not executor:
+                logger.error("No se pudo obtener el executor del flow")
+                return {"success": False, "error": "No executor available"}
+            
+            # Obtener la conversación actual
+            conversation = executor.get_conversation(conversation_id)
+            if not conversation:
+                logger.error(f"Conversación {conversation_id} no encontrada")
+                return {"success": False, "error": "Conversation not found"}
+            
+            # Obtener el step actual para ver si tiene error_fallback_step
+            current_step_id = conversation.get('current_step')
+            if not current_step_id:
+                logger.error("No hay step actual en la conversación")
+                return {"success": False, "error": "No current step"}
+            
+            # Obtener el step actual del flow
+            flow = executor.get_active_flow()
+            if not flow:
+                logger.error("No hay flow activo")
+                return {"success": False, "error": "No active flow"}
+            
+            current_step = flow.get_step(current_step_id)
+            if not current_step:
+                logger.error(f"Step {current_step_id} no encontrado")
+                return {"success": False, "error": "Step not found"}
+            
+            # Verificar si el step tiene error_fallback_step definido
+            error_fallback_step = getattr(current_step, 'error_fallback_step', None)
+            if not error_fallback_step:
+                logger.warning(f"Step {current_step_id} no tiene error_fallback_step definido")
+                return {"success": False, "error": "No error fallback step defined"}
+            
+            # Ejecutar el nodo de error
+            logger.info(f"Ejecutando nodo de error: {error_fallback_step}")
+            result = await executor.execute_step(conversation_id, error_fallback_step)
+            
+            if result.get("success"):
+                logger.info("Nodo de error ejecutado exitosamente")
+                return {
+                    "success": True,
+                    "message": "Error fallback executed successfully",
+                    "step_executed": error_fallback_step
+                }
+            else:
+                logger.error(f"Error ejecutando nodo de error: {result.get('error')}")
+                return {
+                    "success": False,
+                    "error": result.get("error", "Error executing fallback step")
+                }
+                
+        except Exception as e:
+            logger.error(f"Error en execute_error_fallback: {str(e)}")
+            return {
+                "success": False,
+                "error": f"Error in execute_error_fallback: {str(e)}"
+            }
