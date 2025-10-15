@@ -1,8 +1,11 @@
 """
 Servicio para procesamiento inteligente de mensajes WhatsApp
+
+Características:
 - Solo procesa mensajes recibidos después de enviar uno desde la API
 - Concatena mensajes consecutivos en un tiempo configurable
 - Filtra mensajes antiguos que llegaron tarde
+- Manejo de timestamps en UTC para consistencia
 """
 import asyncio
 import logging
@@ -23,7 +26,15 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class MessageBuffer:
-    """Buffer para almacenar mensajes pendientes de procesamiento"""
+    """
+    Buffer para almacenar mensajes pendientes de procesamiento
+    
+    Attributes:
+        phone_number: Número de teléfono del usuario
+        messages: Lista de mensajes pendientes
+        last_api_message_time: Timestamp del último mensaje enviado desde la API
+        processing_task: Tarea asíncrona de procesamiento activa
+    """
     phone_number: str
     messages: List[Dict[str, Any]] = field(default_factory=list)
     last_api_message_time: Optional[datetime] = None
@@ -31,7 +42,13 @@ class MessageBuffer:
 
 
 class MessageProcessor:
-    """Procesador inteligente de mensajes WhatsApp"""
+    """
+    Procesador inteligente de mensajes WhatsApp
+    
+    Maneja el procesamiento temporal de mensajes, concatenación
+    y filtrado de mensajes antiguos para evitar procesamiento
+    de mensajes que llegaron tarde.
+    """
     
     def __init__(self):
         self.message_buffers: Dict[str, MessageBuffer] = {}
@@ -42,7 +59,12 @@ class MessageProcessor:
         logger.info(f"[MESSAGE PROCESSOR] Inicializado con delay: {self.processing_delay}s, concatenación: {self.concatenation_enabled}, tolerancia: {self.time_tolerance}s")
     
     def mark_api_message_sent(self, phone_number: str) -> None:
-        """Marca que se envió un mensaje desde la API para este número"""
+        """
+        Marca que se envió un mensaje desde la API para este número
+        
+        Args:
+            phone_number: Número de teléfono del usuario
+        """
         if phone_number not in self.message_buffers:
             self.message_buffers[phone_number] = MessageBuffer(phone_number=phone_number)
         
@@ -50,7 +72,12 @@ class MessageProcessor:
         logger.info(f"[MESSAGE PROCESSOR] Marcado mensaje API enviado para {phone_number}")
     
     def add_incoming_message(self, message_data: Dict[str, Any]) -> None:
-        """Agrega un mensaje entrante al buffer de procesamiento"""
+        """
+        Agrega un mensaje entrante al buffer de procesamiento
+        
+        Args:
+            message_data: Datos del mensaje entrante
+        """
         phone_number = message_data.get("from")
         if not phone_number:
             logger.warning("[MESSAGE PROCESSOR] Mensaje sin número de teléfono, ignorando")

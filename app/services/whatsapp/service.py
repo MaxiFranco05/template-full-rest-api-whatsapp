@@ -77,9 +77,8 @@ class WhatsAppService:
                         try:
                             from app.services.message_processor import message_processor
                             message_processor.mark_api_message_sent(to)
-                            logger.info(f"[DESARROLLO] Mensaje API marcado para {to}")
                         except Exception as e:
-                            logger.warning(f"[DESARROLLO] Error marcando mensaje API: {e}")
+                            logger.warning(f"Error marcando mensaje API: {e}")
                         
                         return {
                             "success": True,
@@ -98,13 +97,7 @@ class WhatsAppService:
             raise
         except Exception as e:
             whatsapp_logger.log_error(e, {"phone_number": to, "message_type": message_type})
-            # Log de desarrollo: mostrar error detallado del envío
-            if settings.DEBUG:
-                logger.error(f"[DESARROLLO] Error enviando mensaje - Destinatario: {to}")
-                logger.error(f"[DESARROLLO] Error enviando mensaje - Tipo: {message_type}")
-                logger.error(f"[DESARROLLO] Error enviando mensaje - Payload: {json.dumps(payload, indent=2, ensure_ascii=False, default=str)}")
-                logger.error(f"[DESARROLLO] Error enviando mensaje - Excepción completa: {str(e)}")
-                logger.error(f"[DESARROLLO] Error enviando mensaje - Tipo de excepción: {type(e).__name__}")
+            logger.error(f"Error inesperado enviando mensaje a {to}: {str(e)}")
             raise WhatsAppException(
                 f"Error inesperado enviando mensaje: {str(e)}",
                 "SEND_MESSAGE_UNEXPECTED_ERROR",
@@ -173,15 +166,7 @@ class WhatsAppService:
                         }
                         
         except Exception as e:
-            logger.error(f"Excepción enviando plantilla: {e}")
-            # Log de desarrollo: mostrar error detallado del envío de plantilla
-            if settings.DEBUG:
-                logger.error(f"[DESARROLLO] Error enviando plantilla - Destinatario: {to}")
-                logger.error(f"[DESARROLLO] Error enviando plantilla - Nombre: {template_name}")
-                logger.error(f"[DESARROLLO] Error enviando plantilla - Idioma: {language_code}")
-                logger.error(f"[DESARROLLO] Error enviando plantilla - Payload: {json.dumps(payload, indent=2, ensure_ascii=False, default=str)}")
-                logger.error(f"[DESARROLLO] Error enviando plantilla - Excepción completa: {str(e)}")
-                logger.error(f"[DESARROLLO] Error enviando plantilla - Tipo de excepción: {type(e).__name__}")
+            logger.error(f"Excepción enviando plantilla a {to}: {str(e)}")
             return {
                 "success": False,
                 "error": str(e)
@@ -245,9 +230,8 @@ class WhatsAppService:
                         try:
                             from app.services.message_processor import message_processor
                             message_processor.mark_api_message_sent(to)
-                            logger.info(f"[DESARROLLO] Mensaje interactivo API marcado para {to}")
                         except Exception as e:
-                            logger.warning(f"[DESARROLLO] Error marcando mensaje interactivo API: {e}")
+                            logger.warning(f"Error marcando mensaje interactivo API: {e}")
                         
                         return {
                             "success": True,
@@ -255,24 +239,27 @@ class WhatsAppService:
                             "response": response_data
                         }
                     else:
-                        logger.error(f"Failed to send interactive message: {response_data}")
+                        error_info = response_data.get("error", {})
+                        error_message = error_info.get("message", "Unknown error")
+                        error_code = error_info.get("code", "Unknown code")
+                        error_details = error_info.get("error_data", {}).get("details", "No details")
+                        
+                        logger.error(f"Failed to send interactive message:")
+                        logger.error(f"  - Error: {error_message}")
+                        logger.error(f"  - Code: {error_code}")
+                        logger.error(f"  - Details: {error_details}")
+                        logger.error(f"  - Full response: {response_data}")
+                        
                         return {
                             "success": False,
-                            "error": response_data.get("error", {}).get("message", "Unknown error"),
+                            "error": error_message,
+                            "error_code": error_code,
+                            "error_details": error_details,
                             "response": response_data
                         }
                         
         except Exception as e:
-            logger.error(f"Error sending interactive message: {e}")
-            # Log de desarrollo: mostrar error detallado del envío interactivo
-            if settings.DEBUG:
-                logger.error(f"[DESARROLLO] Error enviando mensaje interactivo - Destinatario: {to}")
-                logger.error(f"[DESARROLLO] Error enviando mensaje interactivo - Header: {header_text}")
-                logger.error(f"[DESARROLLO] Error enviando mensaje interactivo - Body: {body_text}")
-                logger.error(f"[DESARROLLO] Error enviando mensaje interactivo - Botones: {json.dumps(buttons, indent=2, ensure_ascii=False)}")
-                logger.error(f"[DESARROLLO] Error enviando mensaje interactivo - Payload: {json.dumps(payload, indent=2, ensure_ascii=False, default=str)}")
-                logger.error(f"[DESARROLLO] Error enviando mensaje interactivo - Excepción completa: {str(e)}")
-                logger.error(f"[DESARROLLO] Error enviando mensaje interactivo - Tipo de excepción: {type(e).__name__}")
+            logger.error(f"Error enviando mensaje interactivo a {to}: {str(e)}")
             return {
                 "success": False,
                 "error": str(e)
@@ -283,29 +270,13 @@ class WhatsAppService:
 
         if mode == "subscribe" and token == self.verify_token:
             logger.info("Webhook de WhatsApp verificado exitosamente")
-            # Log de desarrollo: mostrar detalles de verificación exitosa
-            if settings.DEBUG:
-                logger.info(f"[DESARROLLO] Webhook verificado - Modo: {mode}")
-                logger.info(f"[DESARROLLO] Webhook verificado - Token recibido: {token}")
-                logger.info(f"[DESARROLLO] Webhook verificado - Token esperado: {self.verify_token}")
-                logger.info(f"[DESARROLLO] Webhook verificado - Challenge: {challenge}")
             return challenge
         else:
             logger.warning("Verificación de webhook fallida")
-            # Log de desarrollo: mostrar detalles de verificación fallida
-            if settings.DEBUG:
-                logger.warning(f"[DESARROLLO] Webhook fallido - Modo: {mode}")
-                logger.warning(f"[DESARROLLO] Webhook fallido - Token recibido: {token}")
-                logger.warning(f"[DESARROLLO] Webhook fallido - Token esperado: {self.verify_token}")
-                logger.warning(f"[DESARROLLO] Webhook fallido - Challenge: {challenge}")
             return None
     
     def parse_webhook_data(self, data: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Parse incoming webhook data"""
-        # Log de desarrollo: mostrar JSON completo del webhook
-        if settings.DEBUG:
-            logger.info(f"[DESARROLLO] Webhook recibido completo: {json.dumps(data, indent=2, ensure_ascii=False)}")
-        
         messages = []
         
         try:
@@ -331,21 +302,13 @@ class WhatsAppService:
                                 messages.append(parsed_status)
                                 
         except Exception as e:
-            logger.error(f"Error parseando webhook: {e}")
-            # Log de desarrollo: mostrar error detallado del webhook
-            if settings.DEBUG:
-                logger.error(f"[DESARROLLO] Error parseando webhook - Datos recibidos: {json.dumps(data, indent=2, ensure_ascii=False, default=str)}")
-                logger.error(f"[DESARROLLO] Error parseando webhook - Excepción completa: {str(e)}")
+            logger.error(f"Error parseando webhook: {str(e)}")
         
         return messages
     
     def _parse_message(self, message: Dict[str, Any], value: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Parse individual message from webhook"""
         try:
-            # Log de desarrollo: mostrar datos del mensaje individual
-            if settings.DEBUG:
-                logger.info(f"[DESARROLLO] Parseando mensaje individual: {json.dumps(message, indent=2, ensure_ascii=False)}")
-                logger.info(f"[DESARROLLO] Datos del value: {json.dumps(value, indent=2, ensure_ascii=False)}")
             
             from_number = message.get("from")
             message_id = message.get("id")
@@ -367,15 +330,13 @@ class WhatsAppService:
                     # User clicked a button
                     button_reply = interactive_data.get("button_reply", {})
                     content = button_reply.get("id", "")  # This is the button ID
-                    logger.info(f"[DESARROLLO] Button clicked: {content}")
                 elif interactive_type == "list_reply":
                     # User selected from a list
                     list_reply = interactive_data.get("list_reply", {})
                     content = list_reply.get("id", "")  # This is the list item ID
-                    logger.info(f"[DESARROLLO] List item selected: {content}")
                 else:
                     content = ""
-                    logger.warning(f"[DESARROLLO] Unknown interactive type: {interactive_type}")
+                    logger.warning(f"Unknown interactive type: {interactive_type}")
             elif message_type == "image":
                 media_url = message.get("image", {}).get("id")
                 content = message.get("image", {}).get("caption", "")
@@ -406,20 +367,10 @@ class WhatsAppService:
                 "contact_info": contact_info
             }
             
-            # Log de desarrollo: mostrar mensaje parseado final
-            if settings.DEBUG:
-                logger.info(f"[DESARROLLO] Mensaje parseado final: {json.dumps(parsed_message, indent=2, ensure_ascii=False, default=str)}")
-            
             return parsed_message
             
         except Exception as e:
-            logger.error(f"Error parseando mensaje: {e}")
-            # Log de desarrollo: mostrar error detallado del mensaje
-            if settings.DEBUG:
-                logger.error(f"[DESARROLLO] Error parseando mensaje - Mensaje original: {json.dumps(message, indent=2, ensure_ascii=False, default=str)}")
-                logger.error(f"[DESARROLLO] Error parseando mensaje - Value original: {json.dumps(value, indent=2, ensure_ascii=False, default=str)}")
-                logger.error(f"[DESARROLLO] Error parseando mensaje - Excepción completa: {str(e)}")
-                logger.error(f"[DESARROLLO] Error parseando mensaje - Tipo de excepción: {type(e).__name__}")
+            logger.error(f"Error parseando mensaje: {str(e)}")
             return None
     
     def _parse_status(self, status: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -439,12 +390,7 @@ class WhatsAppService:
             }
             
         except Exception as e:
-            logger.error(f"Error parseando estado: {e}")
-            # Log de desarrollo: mostrar error detallado del estado
-            if settings.DEBUG:
-                logger.error(f"[DESARROLLO] Error parseando estado - Status original: {json.dumps(status, indent=2, ensure_ascii=False, default=str)}")
-                logger.error(f"[DESARROLLO] Error parseando estado - Excepción completa: {str(e)}")
-                logger.error(f"[DESARROLLO] Error parseando estado - Tipo de excepción: {type(e).__name__}")
+            logger.error(f"Error parseando estado: {str(e)}")
             return None
     
     def _send_interactive_response(self, phone_number: str, conversation_state: str, 
@@ -499,10 +445,6 @@ class WhatsAppService:
     async def process_incoming_message(self, message_data: Dict[str, Any], db_session=None) -> Dict[str, Any]:
         """Process incoming WhatsApp message using active flow system"""
         try:
-            # Log de desarrollo: mostrar JSON completo del mensaje
-            if settings.DEBUG:
-                logger.info(f"[DESARROLLO] Mensaje recibido completo: {json.dumps(message_data, indent=2, ensure_ascii=False, default=str)}")
-            
             from_number = message_data.get("from")
             content = message_data.get("content", "").strip()
             contact_info = message_data.get("contact_info", {})
@@ -544,10 +486,6 @@ class WhatsAppService:
             result = await flow_service.process_message(from_number, content)
             
             if result.get("success"):
-                # Log de desarrollo: mostrar resultado del flow
-                if settings.DEBUG:
-                    logger.info(f"[DESARROLLO] Flow procesado exitosamente: {json.dumps(result, indent=2, ensure_ascii=False, default=str)}")
-                
                 # Si el flow envió una respuesta, guardarla en base de datos
                 if result.get("whatsapp_result") and result["whatsapp_result"].get("success"):
                     outbound_message_data = {
@@ -580,13 +518,7 @@ class WhatsAppService:
                 return await self._fallback_message_processing(message_data, db_session, user, db_conversation, persistence_service)
                     
         except Exception as e:
-            logger.error(f"Error procesando mensaje entrante: {e}")
-            # Log de desarrollo: mostrar error detallado del procesamiento
-            if settings.DEBUG:
-                logger.error(f"[DESARROLLO] Error procesando mensaje - Datos del mensaje: {json.dumps(message_data, indent=2, ensure_ascii=False, default=str)}")
-                logger.error(f"[DESARROLLO] Error procesando mensaje - Excepción completa: {str(e)}")
-                logger.error(f"[DESARROLLO] Error procesando mensaje - Tipo de excepción: {type(e).__name__}")
-                logger.error(f"[DESARROLLO] Error procesando mensaje - Traceback: {e.__traceback__}")
+            logger.error(f"Error procesando mensaje entrante: {str(e)}")
             return {
                 "success": False,
                 "error": str(e)
@@ -604,11 +536,6 @@ class WhatsAppService:
             
             # Determinar si es usuario nuevo
             is_new_user = conversation.message_count == 0
-            
-            # Log de desarrollo: mostrar procesamiento de fallback
-            if settings.DEBUG:
-                logger.info(f"[DESARROLLO] Usando procesamiento de fallback - Usuario nuevo: {is_new_user}")
-                logger.info(f"[DESARROLLO] Estado de conversación: {conversation.state}")
             
             if conversation.state == "initial":
                 # Primer mensaje - enviar bienvenida
@@ -718,7 +645,7 @@ class WhatsAppService:
                     }
                     
         except Exception as e:
-            logger.error(f"Error en procesamiento de fallback: {e}")
+            logger.error(f"Error en procesamiento de fallback: {str(e)}")
             return {
                 "success": False,
                 "error": f"Error en fallback: {str(e)}"

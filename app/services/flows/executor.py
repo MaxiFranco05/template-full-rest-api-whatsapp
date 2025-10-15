@@ -230,9 +230,17 @@ class FlowExecutor:
                 
                 # No condition matched, stay on same step
                 logger.info("No condition matched, staying on same step")
+                
+                # Send error message to user
+                error_message = "Opción no válida. Por favor selecciona una opción válida."
+                await self.whatsapp_service.send_message(
+                    to=conversation["phone_number"],
+                    message=error_message
+                )
+                
                 return {
                     "success": True,
-                    "message": "Opción no válida. Por favor selecciona una opción válida.",
+                    "message": error_message,
                     "waiting_for_input": True,
                     "current_step": conversation["current_step"]
                 }
@@ -240,6 +248,14 @@ class FlowExecutor:
             # No user input, send interactive buttons
             logger.info("No user input, sending interactive buttons")
             message = self._process_template(step.message, conversation["variables"])
+            
+            # Validate message length for WhatsApp interactive messages
+            if len(message) > 60:
+                logger.warning(f"Message too long for WhatsApp interactive header: {len(message)} chars (max 60)")
+                logger.warning(f"Message content: {message}")
+                # Truncate message to fit WhatsApp limits
+                message = message[:57] + "..."
+                logger.info(f"Truncated message to: {message}")
             
             # Create interactive buttons
             buttons = []

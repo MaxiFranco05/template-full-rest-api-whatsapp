@@ -5,15 +5,10 @@ from datetime import datetime, timedelta
 from typing import Optional, Union
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from fastapi import HTTPException, status, Depends
-from fastapi.security import OAuth2PasswordBearer
 from app.core.config import settings
 
 # Configuración de hash de contraseñas
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-# Configuración de OAuth2
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
@@ -51,8 +46,16 @@ def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
+def get_current_user(token: str = None):
     """Obtener usuario actual desde token JWT"""
+    # Importar FastAPI solo cuando se necesite
+    try:
+        from fastapi import HTTPException, status, Depends
+        from fastapi.security import OAuth2PasswordBearer
+    except ImportError:
+        # Si FastAPI no está disponible, retornar None
+        return None
+    
     from app.services.user_service import user_service
     
     credentials_exception = HTTPException(

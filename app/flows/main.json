@@ -110,7 +110,7 @@
       "id": "show_button_example",
       "type": "choice",
       "name": "Button Message Example",
-      "message": "🔘 **Ejemplo de Mensaje con Botones:**\n\nLos botones permiten al usuario elegir entre opciones predefinidas. WhatsApp permite máximo 3 botones por mensaje.\n\n¿Qué opción prefieres?",
+      "message": "🔘 Ejemplo de Mensaje con Botones:\n\nLos botones permiten elegir entre opciones predefinidas.\n\n¿Qué opción prefieres?",
       "options": [
         {
           "id": "option1",
@@ -268,7 +268,7 @@
       "id": "interactive_demo_menu",
       "type": "choice",
       "name": "Interactive Demo Menu",
-      "message": "🎮 **Demo Interactivo:**\n\nSelecciona una experiencia interactiva:",
+      "message": "🎮 Demo Interactivo:\n\nSelecciona una experiencia interactiva:",
       "options": [
         {
           "id": "quiz_demo",
@@ -310,7 +310,7 @@
       "id": "quiz_question_1",
       "type": "choice",
       "name": "Quiz Question 1",
-      "message": "🧠 **Quiz Rápido - Pregunta 1:**\n\n¿Cuál es el máximo número de botones que permite WhatsApp en un mensaje?",
+      "message": "🧠 Quiz Rápido - Pregunta 1:\n\n¿Cuál es el máximo número de botones que permite WhatsApp?",
       "options": [
         {
           "id": "quiz_2",

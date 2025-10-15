@@ -221,8 +221,13 @@ class RedisCacheBackend(BaseCacheBackend):
         if self._redis is None:
             try:
                 import redis.asyncio as redis
-                self._redis = redis.from_url("redis://localhost:6379")
+                from app.core.config import settings
+                
+                # Usar URL de configuración o fallback
+                redis_url = settings.REDIS_URL or "redis://localhost:6379"
+                self._redis = redis.from_url(redis_url)
                 await self._redis.ping()
+                logger.info(f"Conectado a Redis: {redis_url}")
             except ImportError:
                 logger.error("Redis not available. Install redis package.")
                 raise
@@ -590,7 +595,27 @@ def get_cache_manager() -> CacheManager:
     """Get global cache manager instance"""
     global _cache_manager
     if _cache_manager is None:
-        config = CacheConfig()
+        # Importar configuración para detectar Redis
+        from app.core.config import settings
+        
+        # Determinar backend basado en configuración
+        if settings.REDIS_URL:
+            config = CacheConfig(
+                backend=CacheBackend.REDIS,
+                ttl=3600,
+                max_size=1000,
+                namespace="whatsapp_api"
+            )
+            logger.info("Cache configurado para usar Redis")
+        else:
+            config = CacheConfig(
+                backend=CacheBackend.MEMORY,
+                ttl=3600,
+                max_size=1000,
+                namespace="whatsapp_api"
+            )
+            logger.info("Cache configurado para usar memoria (Redis no disponible)")
+        
         _cache_manager = CacheManager(config)
     return _cache_manager
 
