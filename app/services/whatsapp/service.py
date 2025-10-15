@@ -67,6 +67,15 @@ class WhatsAppService:
                     if response.status == 200:
                         message_id = result.get("messages", [{}])[0].get("id")
                         whatsapp_logger.log_message_sent(message_id, to, True)
+                        
+                        # Marcar que se envió un mensaje desde la API
+                        try:
+                            from app.services.message_processor import message_processor
+                            message_processor.mark_api_message_sent(to)
+                            logger.info(f"[DESARROLLO] Mensaje API marcado para {to}")
+                        except Exception as e:
+                            logger.warning(f"[DESARROLLO] Error marcando mensaje API: {e}")
+                        
                         return {
                             "success": True,
                             "message_id": message_id,
@@ -226,6 +235,15 @@ class WhatsAppService:
                     
                     if response.status == 200:
                         logger.info(f"Interactive message sent successfully to {to}")
+                        
+                        # Marcar que se envió un mensaje desde la API
+                        try:
+                            from app.services.message_processor import message_processor
+                            message_processor.mark_api_message_sent(to)
+                            logger.info(f"[DESARROLLO] Mensaje interactivo API marcado para {to}")
+                        except Exception as e:
+                            logger.warning(f"[DESARROLLO] Error marcando mensaje interactivo API: {e}")
+                        
                         return {
                             "success": True,
                             "message_id": response_data.get("messages", [{}])[0].get("id"),

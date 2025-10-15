@@ -59,6 +59,10 @@ class Settings(BaseSettings):
     WHATSAPP_USER_ID: str = ""
     WHATSAPP_CATALOG_ID: str = ""
     
+    # Configuración de procesamiento de mensajes
+    MESSAGE_PROCESSING_DELAY_SECONDS: int = 2
+    MESSAGE_CONCATENATION_ENABLED: bool = True
+    
     # Base de datos (SQLite por defecto, pero configurable)
     DATABASE_TYPE: str = "sqlite"  # sqlite, postgresql, mysql
     SQLITE_DATABASE_URL: str = "sqlite:///./business_api.db"
