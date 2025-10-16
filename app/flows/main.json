@@ -465,12 +465,24 @@
       "footer_text": "Productos disponibles",
       "sections": [
         {
-          "title": "Productos Destacados",
-          "product_items": ["prod_001", "prod_002", "prod_003"]
+          "title": "Productos Congelados",
+          "product_items": [
+            {"product_retailer_id": "medallones_espinaca_6u"},
+            {"product_retailer_id": "verduras_sopa_500"},
+            {"product_retailer_id": "empanadas_12u"},
+            {"product_retailer_id": "nuggets_500"},
+            {"product_retailer_id": "helado_crema_1l"}
+          ]
         },
         {
-          "title": "Ofertas Especiales",
-          "product_items": ["prod_004", "prod_005"]
+          "title": "Carnes y Pescados",
+          "product_items": [
+            {"product_retailer_id": "milas_soja_6u"},
+            {"product_retailer_id": "merluza_1kg"},
+            {"product_retailer_id": "hamb_vacuna_4u"},
+            {"product_retailer_id": "pizza_muzza_400"},
+            {"product_retailer_id": "papas_1kg"}
+          ]
         }
       ],
       "next_step": "back_to_message_types",
