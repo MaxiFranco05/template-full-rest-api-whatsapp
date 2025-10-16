@@ -1,0 +1,108 @@
+name: Deployment
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+
+jobs:
+  deploy-staging:
+    if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+    runs-on: ubuntu-latest
+    environment: staging
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Deploy to staging
+      run: |
+        echo "🚀 Deploying to staging environment..."
+        echo "Environment: staging"
+        echo "Branch: ${{ github.ref }}"
+        echo "Commit: ${{ github.sha }}"
+        
+        # Here you would add your actual deployment commands
+        # Examples:
+        # - kubectl apply -f k8s/staging/
+        # - docker-compose -f docker-compose.staging.yml up -d
+        # - aws ecs update-service --cluster staging --service business-api --force-new-deployment
+        
+        echo "✅ Staging deployment completed!"
+        
+    - name: Run smoke tests
+      run: |
+        echo "🧪 Running smoke tests against staging..."
+        # Add your smoke tests here
+        # curl -f https://staging-api.yourapp.com/health
+        
+    - name: Notify deployment
+      run: |
+        echo "📢 Notifying team about staging deployment..."
+        # Add notification logic here (Slack, Discord, etc.)
+
+  deploy-production:
+    if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
+    runs-on: ubuntu-latest
+    environment: production
+    needs: deploy-staging
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Deploy to production
+      run: |
+        echo "🚀 Deploying to production environment..."
+        echo "Environment: production"
+        echo "Branch: ${{ github.ref }}"
+        echo "Commit: ${{ github.sha }}"
+        
+        # Here you would add your actual deployment commands
+        # Examples:
+        # - kubectl apply -f k8s/production/
+        # - docker-compose -f docker-compose.production.yml up -d
+        # - aws ecs update-service --cluster production --service business-api --force-new-deployment
+        
+        echo "✅ Production deployment completed!"
+        
+    - name: Run smoke tests
+      run: |
+        echo "🧪 Running smoke tests against production..."
+        # Add your smoke tests here
+        # curl -f https://api.yourapp.com/health
+        
+    - name: Notify deployment
+      run: |
+        echo "📢 Notifying team about production deployment..."
+        # Add notification logic here (Slack, Discord, etc.)
+        
+    - name: Create release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ github.run_number }}
+        release_name: Release v${{ github.run_number }}
+        body: |
+          ## Changes in this Release
+          
+          - Automated deployment from commit ${{ github.sha }}
+          - Branch: ${{ github.ref }}
+          - Environment: Production
+          
+          ### Deployment Details
+          - **Timestamp**: ${{ github.event.head_commit.timestamp }}
+          - **Author**: ${{ github.event.head_commit.author.name }}
+          - **Message**: ${{ github.event.head_commit.message }}
+        draft: false
+        prerelease: false

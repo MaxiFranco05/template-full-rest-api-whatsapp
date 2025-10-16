@@ -77,17 +77,13 @@ def use_celery() -> bool:
     return feature_detection.celery_available
 
 def get_cache():
-    """Obtener instancia de cache (Redis o fallback)"""
-    if use_redis():
-        try:
-            from app.cache import cache
-            return cache
-        except ImportError:
-            pass
-    
-    # Fallback: cache en memoria simple
-    from app.utils.simple_cache import SimpleCache
-    return SimpleCache()
+    """Obtener instancia de cache usando el sistema consolidado"""
+    try:
+        from app.utils.cache import get_cache_manager
+        return get_cache_manager()
+    except ImportError:
+        logger.warning("Sistema de cache no disponible")
+        return None
 
 def execute_task(task_func, *args, **kwargs):
     """Ejecutar tarea (asíncrona si Celery disponible, síncrona si no)"""

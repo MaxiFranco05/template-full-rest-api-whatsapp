@@ -1,91 +1,712 @@
 {
   "id": "main",
-  "name": "Main Flow",
-  "description": "Simple main flow that greets differently for first message vs returning users",
-  "start_step": "check_user_status",
+  "name": "Main Chatbot Flow",
+  "description": "Flow principal del chatbot que muestra todas las capacidades del sistema",
+  "version": "1.0.0",
+  "start_step": "welcome",
   "variables": {
-    "company_name": "Mi Empresa",
-    "support_hours": "9:00 - 18:00"
-  },
-  "error_handling": {
-    "validation_failed": "show_error",
-    "timeout": "show_timeout"
+    "user_name": "Usuario"
   },
   "steps": [
     {
-      "id": "check_user_status",
-      "type": "condition",
-      "name": "Check User Status",
-      "conditions": [
+      "id": "welcome",
+      "type": "message",
+      "name": "Welcome Message",
+      "message": "¡Hola {{user_name}}! Bienvenido al sistema de flujos conversacionales. Aquí puedes explorar todas las capacidades disponibles.",
+      "next_step": "main_menu"
+    },
+    {
+      "id": "main_menu",
+      "type": "choice",
+      "name": "Main Menu",
+      "message": "¿Qué te gustaría explorar?",
+      "options": [
         {
-          "condition": "is_first_message == true",
-          "next_step": "first_time_greeting"
+          "id": "message_types",
+          "title": "📱 Mensajes"
         },
         {
-          "condition": "is_first_message == false",
-          "next_step": "returning_user_greeting"
+          "id": "flow_examples",
+          "title": "🔄 Flujos"
+        },
+        {
+          "id": "interactive_demo",
+          "title": "🎮 Demo"
+        },
+        {
+          "id": "help",
+          "title": "❓ Ayuda"
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "user_choice == 'message_types'",
+          "next_step": "message_types_menu"
+        },
+        {
+          "condition": "user_choice == 'flow_examples'",
+          "next_step": "flow_examples_menu"
+        },
+        {
+          "condition": "user_choice == 'interactive_demo'",
+          "next_step": "interactive_demo_menu"
+        },
+        {
+          "condition": "user_choice == 'help'",
+          "next_step": "help_response"
         }
       ]
     },
     {
-      "id": "first_time_greeting",
-      "type": "message",
-      "name": "First Time Greeting",
-      "message": "¡Hola! 👋 Bienvenido a {{company_name}}. Soy tu asistente virtual y estoy aquí para ayudarte. ¿En qué puedo asistirte hoy?",
-      "next_step": "wait_for_response"
+      "id": "message_types_menu",
+      "type": "choice",
+      "name": "Message Types Menu",
+      "message": "Selecciona un tipo de mensaje para ver un ejemplo:",
+      "choice_type": "list",
+      "button_text": "Ver Tipos",
+      "options": [
+        {
+          "id": "text_message",
+          "title": "💬 Texto",
+          "description": "Mensajes de texto simples"
+        },
+        {
+          "id": "button_message",
+          "title": "🔘 Botones",
+          "description": "Mensajes interactivos con botones"
+        },
+        {
+          "id": "list_message",
+          "title": "📋 Lista",
+          "description": "Mensajes interactivos con listas"
+        },
+        {
+          "id": "image_message",
+          "title": "🖼️ Imagen",
+          "description": "Mensajes con imágenes"
+        },
+        {
+          "id": "document_message",
+          "title": "📄 Documento",
+          "description": "Mensajes con archivos"
+        },
+        {
+          "id": "audio_message",
+          "title": "🎵 Audio",
+          "description": "Mensajes con archivos de audio"
+        },
+        {
+          "id": "video_message",
+          "title": "🎥 Video",
+          "description": "Mensajes con archivos de video"
+        },
+        {
+          "id": "location_message",
+          "title": "📍 Ubicación",
+          "description": "Mensajes con coordenadas GPS"
+        },
+        {
+          "id": "contact_message",
+          "title": "👤 Contacto",
+          "description": "Mensajes con información de contacto"
+        },
+        {
+          "id": "catalog_message",
+          "title": "🛍️ Catálogo",
+          "description": "Mensajes con productos estructurados"
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "user_choice == 'text_message'",
+          "next_step": "show_text_example"
+        },
+        {
+          "condition": "user_choice == 'button_message'",
+          "next_step": "show_button_example"
+        },
+        {
+          "condition": "user_choice == 'list_message'",
+          "next_step": "show_list_example"
+        },
+        {
+          "condition": "user_choice == 'image_message'",
+          "next_step": "show_image_example"
+        },
+        {
+          "condition": "user_choice == 'document_message'",
+          "next_step": "show_document_example"
+        },
+        {
+          "condition": "user_choice == 'audio_message'",
+          "next_step": "show_audio_example"
+        },
+        {
+          "condition": "user_choice == 'video_message'",
+          "next_step": "show_video_example"
+        },
+        {
+          "condition": "user_choice == 'location_message'",
+          "next_step": "show_location_example"
+        },
+        {
+          "condition": "user_choice == 'contact_message'",
+          "next_step": "show_contact_example"
+        },
+        {
+          "condition": "user_choice == 'reaction_message'",
+          "next_step": "show_reaction_example"
+        },
+        {
+          "condition": "user_choice == 'catalog_message'",
+          "next_step": "show_catalog_example"
+        },
+        {
+          "condition": "user_choice == 'flow_message'",
+          "next_step": "show_flow_example"
+        }
+      ]
     },
     {
-      "id": "returning_user_greeting",
-      "type": "message",
-      "name": "Returning User Greeting",
-      "message": "¡Hola de nuevo! 😊 Me alegra verte otra vez. ¿En qué más puedo ayudarte hoy?",
-      "next_step": "wait_for_response"
+      "id": "show_text_example",
+      "type": "choice",
+      "name": "Text Message Example",
+      "message": "📝 Mensajes de Texto",
+      "message_type": "list",
+      "choice_type": "list",
+      "button_text": "Ver Ejemplos",
+      "options": [
+        {
+          "id": "text_basic",
+          "title": "📄 Texto Básico",
+          "description": "Mensaje de texto simple"
+        },
+        {
+          "id": "text_formatted",
+          "title": "✨ Texto Formateado",
+          "description": "Con negrita, cursiva y emojis"
+        },
+        {
+          "id": "text_variables",
+          "title": "🔧 Con Variables",
+          "description": "Personalización dinámica"
+        },
+        {
+          "id": "text_multiline",
+          "title": "📋 Multilínea",
+          "description": "Mensajes largos estructurados"
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "user_choice == 'text_basic'",
+          "next_step": "text_basic_example"
+        },
+        {
+          "condition": "user_choice == 'text_formatted'",
+          "next_step": "text_formatted_example"
+        },
+        {
+          "condition": "user_choice == 'text_variables'",
+          "next_step": "text_variables_example"
+        },
+        {
+          "condition": "user_choice == 'text_multiline'",
+          "next_step": "text_multiline_example"
+        }
+      ],
+      "next_step": "back_to_message_types"
     },
     {
-      "id": "wait_for_response",
-      "type": "question",
-      "name": "Wait for Response",
-      "question": "Escribe tu consulta o pregunta:",
-      "validation": {
-        "required": true,
-        "min_length": 2,
-        "error_message": "Por favor, escribe tu consulta."
-      },
-      "next_step": "process_response"
+      "id": "text_basic_example",
+      "type": "message",
+      "name": "Text Basic Example",
+      "message": "📄 **Texto Básico:**\n\nHola! Este es un mensaje de texto simple.\n\nLos mensajes de texto son la forma más básica de comunicación en WhatsApp Business API. Son ideales para:\n• Saludos\n• Información general\n• Respuestas simples\n• Notificaciones",
+      "next_step": "back_to_message_types"
     },
     {
-      "id": "process_response",
+      "id": "text_formatted_example",
       "type": "message",
-      "name": "Process Response",
-      "message": "Gracias por tu mensaje. He recibido tu consulta y la procesaré pronto. ¿Hay algo más en lo que pueda ayudarte?",
-      "next_step": "end"
+      "name": "Text Formatted Example",
+      "message": "✨ **Texto Formateado:**\n\n*Este texto está en cursiva*\n**Este texto está en negrita**\n~~Este texto está tachado~~\n\n`Este texto está en código`\n\n```\nEste es un bloque de código\ncon múltiples líneas\n```\n\n🔤 **Caracteres especiales:**\n• Emojis: 😊 🎉 🚀\n• Símbolos: ★ ☆ ♥ ♦\n• Flechas: → ← ↑ ↓",
+      "next_step": "back_to_message_types"
     },
     {
-      "id": "show_error",
+      "id": "text_variables_example",
       "type": "message",
-      "name": "Show Error",
-      "message": "❌ Lo siento, hubo un error. Por favor, intenta nuevamente.",
-      "next_step": "wait_for_response"
+      "name": "Text Variables Example",
+      "message": "🔧 **Con Variables:**\n\nHola {{user_name}}! 👋\n\nTu pedido #{{order_id}} está listo.\n\n📦 **Detalles del pedido:**\n• Producto: {{product_name}}\n• Cantidad: {{quantity}}\n• Precio: ${{price}}\n• Fecha: {{order_date}}\n\n¡Gracias por elegirnos! 🙏\n\n*Las variables se reemplazan dinámicamente con datos reales del usuario.*",
+      "next_step": "back_to_message_types"
     },
     {
-      "id": "show_timeout",
+      "id": "text_multiline_example",
       "type": "message",
-      "name": "Show Timeout",
-      "message": "⏰ La conversación ha expirado. ¿Te gustaría empezar de nuevo?",
-      "next_step": "check_user_status"
+      "name": "Text Multiline Example",
+      "message": "📋 **Mensaje Multilínea:**\n\n🏪 **BIENVENIDO A NUESTRA TIENDA**\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n📱 **HORARIOS DE ATENCIÓN:**\n• Lunes a Viernes: 9:00 AM - 7:00 PM\n• Sábados: 10:00 AM - 5:00 PM\n• Domingos: Cerrado\n\n📞 **CONTACTO:**\n• WhatsApp: +1-555-0123\n• Email: info@tienda.com\n• Web: www.tienda.com\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n💡 **TIP:** Los mensajes largos son perfectos para información detallada, términos y condiciones, o instrucciones paso a paso.",
+      "next_step": "back_to_message_types"
+    },
+    {
+      "id": "show_button_example",
+      "type": "choice",
+      "name": "Button Message Example",
+      "message": "🔘 Ejemplo de Mensaje con Botones:\n\nLos botones permiten elegir entre opciones predefinidas.\n\n¿Qué opción prefieres?",
+      "message_type": "buttons",
+      "choice_type": "buttons",
+      "options": [
+        {
+          "id": "option1",
+          "title": "✅ Opción 1"
+        },
+        {
+          "id": "option2",
+          "title": "✅ Opción 2"
+        },
+        {
+          "id": "option3",
+          "title": "✅ Opción 3"
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "user_choice == 'option1'",
+          "next_step": "back_to_message_types"
+        },
+        {
+          "condition": "user_choice == 'option2'",
+          "next_step": "back_to_message_types"
+        },
+        {
+          "condition": "user_choice == 'option3'",
+          "next_step": "back_to_message_types"
+        }
+      ]
+    },
+    {
+      "id": "button_response_1",
+      "type": "message",
+      "name": "Button Response 1",
+      "message": "¡Excelente elección! Has seleccionado la Opción 1. Los botones son perfectos para menús, confirmaciones y opciones limitadas.",
+      "next_step": "back_to_message_types"
+    },
+    {
+      "id": "button_response_2",
+      "type": "message",
+      "name": "Button Response 2",
+      "message": "¡Muy bien! Has elegido la Opción 2. Los botones facilitan la navegación y mejoran la experiencia del usuario.",
+      "next_step": "back_to_message_types"
+    },
+    {
+      "id": "button_response_3",
+      "type": "message",
+      "name": "Button Response 3",
+      "message": "¡Perfecto! Has seleccionado la Opción 3. Los botones son ideales para flujos estructurados y decisiones rápidas.",
+      "next_step": "back_to_message_types"
+    },
+    {
+      "id": "show_list_example",
+      "type": "choice",
+      "name": "List Message Example",
+      "message": "📋 Ejemplo de Mensaje con Lista",
+      "message_type": "list",
+      "choice_type": "list",
+      "button_text": "Ver Opciones",
+      "options": [
+        {
+          "id": "list_option1",
+          "title": "📋 Opción 1",
+          "description": "Primera opción de la lista"
+        },
+        {
+          "id": "list_option2",
+          "title": "📋 Opción 2",
+          "description": "Segunda opción de la lista"
+        },
+        {
+          "id": "list_option3",
+          "title": "📋 Opción 3",
+          "description": "Tercera opción de la lista"
+        },
+        {
+          "id": "list_option4",
+          "title": "📋 Opción 4",
+          "description": "Cuarta opción de la lista"
+        },
+        {
+          "id": "list_option5",
+          "title": "📋 Opción 5",
+          "description": "Quinta opción de la lista"
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "user_choice == 'list_option1'",
+          "next_step": "back_to_message_types"
+        },
+        {
+          "condition": "user_choice == 'list_option2'",
+          "next_step": "back_to_message_types"
+        },
+        {
+          "condition": "user_choice == 'list_option3'",
+          "next_step": "back_to_message_types"
+        },
+        {
+          "condition": "user_choice == 'list_option4'",
+          "next_step": "back_to_message_types"
+        },
+        {
+          "condition": "user_choice == 'list_option5'",
+          "next_step": "back_to_message_types"
+        }
+      ],
+      "next_step": "back_to_message_types"
+    },
+    {
+      "id": "show_image_example",
+      "type": "message",
+      "name": "Image Message Example",
+      "message": "🖼️ Ejemplo de mensaje con imagen real",
+      "message_type": "image",
+      "image_url": "https://picsum.photos/400/300",
+      "caption": "Esta es una imagen real enviada usando el tipo 'image' nativo de WhatsApp. Los mensajes con imágenes son perfectos para mostrar productos, instrucciones visuales, memes, infografías y capturas de pantalla.",
+      "next_step": "back_to_message_types"
+    },
+    {
+      "id": "show_document_example",
+      "type": "message",
+      "name": "Document Message Example",
+      "message": "📄 Ejemplo de mensaje con documento real",
+      "message_type": "document",
+      "document_url": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+      "filename": "documento_prueba.pdf",
+      "caption": "Este es un documento PDF enviado usando el tipo 'document' nativo de WhatsApp. Los mensajes con documentos pueden incluir PDFs, archivos de Word, hojas de cálculo, presentaciones y archivos de texto.",
+      "next_step": "back_to_message_types"
+    },
+    {
+      "id": "show_audio_example",
+      "type": "message",
+      "name": "Audio Message Example",
+      "message": "🎵 Ejemplo de mensaje con audio real",
+      "message_type": "audio",
+      "audio_url": "https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3",
+      "next_step": "back_to_message_types"
+    },
+    {
+      "id": "show_video_example",
+      "type": "message",
+      "name": "Video Message Example",
+      "message": "🎥 Ejemplo de mensaje con video real",
+      "message_type": "video",
+      "video_url": "https://www.learningcontainer.com/wp-content/uploads/2020/05/sample-mp4-file.mp4",
+      "caption": "Este es un video enviado usando el tipo 'video' nativo de WhatsApp. Los mensajes con video pueden incluir videos explicativos, demostraciones, tutoriales, contenido promocional y videos cortos.",
+      "next_step": "back_to_message_types"
+    },
+    {
+      "id": "show_location_example",
+      "type": "message",
+      "name": "Location Message Example",
+      "message": "📍 Ejemplo de mensaje con ubicación real",
+      "message_type": "location",
+      "latitude": -34.6037,
+      "longitude": -58.3816,
+      "location_name": "Obelisco de Buenos Aires",
+      "address": "Av. 9 de Julio, C1043 CABA, Argentina",
+      "next_step": "back_to_message_types"
+    },
+    {
+      "id": "show_contact_example",
+      "type": "message",
+      "name": "Contact Message Example",
+      "message": "👤 Ejemplo de mensaje con contacto real",
+      "message_type": "contacts",
+      "contacts": [
+        {
+          "name": {
+            "formatted_name": "Juan Pérez",
+            "first_name": "Juan",
+            "last_name": "Pérez"
+          },
+          "phones": [
+            {
+              "phone": "+5491123456789",
+              "type": "MOBILE"
+            }
+          ],
+          "emails": [
+            {
+              "email": "juan.perez@ejemplo.com",
+              "type": "WORK"
+            }
+          ],
+          "org": {
+            "company": "Empresa Ejemplo",
+            "title": "Desarrollador"
+          }
+        }
+      ],
+      "next_step": "back_to_message_types"
+    },
+    {
+      "id": "show_reaction_example",
+      "type": "message",
+      "name": "Reaction Message Example",
+      "message": "👍 **Ejemplo de Mensaje de Reacción:**\n\nLas reacciones permiten:\n\n• Responder con emojis\n• Confirmar recepción\n• Expresar emociones\n• Feedback rápido\n• Interacción simple\n\nIncluyen emojis como 👍, ❤️, 😂, 😮, 😢, 😡.",
+      "next_step": "back_to_message_types"
+    },
+    {
+      "id": "show_catalog_example",
+      "type": "message",
+      "name": "Catalog Message Example",
+      "message": "🛍️ **Ejemplo de Mensaje con Catálogo:**\n\nLos mensajes con catálogo son ideales para:\n\n• Mostrar productos\n• E-commerce\n• Tiendas online\n• Inventarios\n• Ventas\n\nIncluyen imágenes, precios, descripciones y botones de compra.",
+      "message_type": "catalog",
+      "catalog_id": "785880617687252",
+      "header_text": "🛍️ Nuestro Catálogo de Productos",
+      "body_text": "Elegí una opción para ver más detalles 👇",
+      "footer_text": "Productos disponibles",
+      "sections": [
+        {
+          "title": "Productos Congelados",
+          "product_items": [
+            {"product_retailer_id": "medallones_espinaca_6u"},
+            {"product_retailer_id": "verduras_sopa_500"},
+            {"product_retailer_id": "empanadas_12u"},
+            {"product_retailer_id": "nuggets_500"},
+            {"product_retailer_id": "helado_crema_1l"}
+          ]
+        },
+        {
+          "title": "Carnes y Pescados",
+          "product_items": [
+            {"product_retailer_id": "milas_soja_6u"},
+            {"product_retailer_id": "merluza_1kg"},
+            {"product_retailer_id": "hamb_vacuna_4u"},
+            {"product_retailer_id": "pizza_muzza_400"},
+            {"product_retailer_id": "papas_1kg"}
+          ]
+        }
+      ],
+      "next_step": "back_to_message_types",
+      "error_fallback_step": "error_fallback"
+    },
+    {
+      "id": "show_flow_example",
+      "type": "message",
+      "name": "Flow Message Example",
+      "message": "🔄 **Ejemplo de Mensaje con Flujo:**\n\nLos mensajes con flujo permiten:\n\n• Experiencias interactivas\n• Formularios complejos\n• Navegación avanzada\n• Integración con APIs\n• Flujos personalizados\n\nSon la evolución de los mensajes interactivos de WhatsApp.",
+      "next_step": "back_to_message_types"
+    },
+    {
+      "id": "back_to_message_types",
+      "type": "choice",
+      "name": "Back to Message Types",
+      "message": "¿Qué te gustaría hacer ahora?",
+      "options": [
+        {
+          "id": "see_more_types",
+          "title": "👀 Ver Más Tipos"
+        },
+        {
+          "id": "back_to_main",
+          "title": "🏠 Menú Principal"
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "user_choice == 'see_more_types'",
+          "next_step": "message_types_menu"
+        },
+        {
+          "condition": "user_choice == 'back_to_main'",
+          "next_step": "main_menu"
+        }
+      ]
+    },
+    {
+      "id": "flow_examples_menu",
+      "type": "choice",
+      "name": "Flow Examples Menu",
+      "message": "Selecciona un ejemplo de flujo para explorar:",
+      "options": [
+        {
+          "id": "simple_flow",
+          "title": "🔄 Flujo Simple"
+        },
+        {
+          "id": "complex_flow",
+          "title": "🔀 Flujo Complejo"
+        },
+        {
+          "id": "conditional_flow",
+          "title": "⚡ Flujo Condicional"
+        },
+        {
+          "id": "back_to_main",
+          "title": "🏠 Menú Principal"
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "user_choice == 'simple_flow'",
+          "next_step": "show_simple_flow"
+        },
+        {
+          "condition": "user_choice == 'complex_flow'",
+          "next_step": "show_complex_flow"
+        },
+        {
+          "condition": "user_choice == 'conditional_flow'",
+          "next_step": "show_conditional_flow"
+        },
+        {
+          "condition": "user_choice == 'back_to_main'",
+          "next_step": "main_menu"
+        }
+      ]
+    },
+    {
+      "id": "show_simple_flow",
+      "type": "message",
+      "name": "Simple Flow Example",
+      "message": "🔄 **Flujo Simple:**\n\nUn flujo simple tiene:\n• Mensaje de bienvenida\n• Una pregunta o menú\n• Respuesta directa\n• Finalización\n\nEjemplo:\n1. \"¡Hola!\"\n2. \"¿Necesitas ayuda?\"\n3. \"Aquí tienes la información\"\n4. \"¡Hasta luego!\"",
+      "next_step": "flow_examples_menu"
+    },
+    {
+      "id": "show_complex_flow",
+      "type": "message",
+      "name": "Complex Flow Example",
+      "message": "🔀 **Flujo Complejo:**\n\nUn flujo complejo incluye:\n• Múltiples menús\n• Sub-flujos\n• Navegación entre secciones\n• Persistencia de datos\n• Validaciones\n\nEjemplo: Sistema de pedidos con:\n- Selección de categoría\n- Menú de productos\n- Confirmación\n- Seguimiento",
+      "next_step": "flow_examples_menu"
+    },
+    {
+      "id": "show_conditional_flow",
+      "type": "message",
+      "name": "Conditional Flow Example",
+      "message": "⚡ **Flujo Condicional:**\n\nLos flujos condicionales usan:\n• Condiciones basadas en respuestas\n• Validaciones de entrada\n• Rutas dinámicas\n• Lógica de negocio\n\nEjemplo:\n- Si usuario es VIP → Descuentos especiales\n- Si pedido > $50 → Envío gratis\n- Si hora < 9am → Menú desayuno",
+      "next_step": "flow_examples_menu"
+    },
+    {
+      "id": "interactive_demo_menu",
+      "type": "choice",
+      "name": "Interactive Demo Menu",
+      "message": "🎮 Demo Interactivo:\n\nSelecciona una experiencia interactiva:",
+      "options": [
+        {
+          "id": "quiz_demo",
+          "title": "🧠 Quiz Rápido"
+        },
+        {
+          "id": "form_demo",
+          "title": "📝 Formulario"
+        },
+        {
+          "id": "game_demo",
+          "title": "🎯 Mini Juego"
+        },
+        {
+          "id": "back_to_main",
+          "title": "🏠 Menú Principal"
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "user_choice == 'quiz_demo'",
+          "next_step": "quiz_question_1"
+        },
+        {
+          "condition": "user_choice == 'form_demo'",
+          "next_step": "form_demo"
+        },
+        {
+          "condition": "user_choice == 'game_demo'",
+          "next_step": "game_demo"
+        },
+        {
+          "condition": "user_choice == 'back_to_main'",
+          "next_step": "main_menu"
+        }
+      ]
+    },
+    {
+      "id": "quiz_question_1",
+      "type": "choice",
+      "name": "Quiz Question 1",
+      "message": "🧠 Quiz Rápido - Pregunta 1:\n\n¿Cuál es el máximo número de botones que permite WhatsApp?",
+      "options": [
+        {
+          "id": "quiz_2",
+          "title": "2 botones"
+        },
+        {
+          "id": "quiz_3",
+          "title": "3 botones"
+        },
+        {
+          "id": "quiz_5",
+          "title": "5 botones"
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "user_choice == 'quiz_2'",
+          "next_step": "quiz_wrong"
+        },
+        {
+          "condition": "user_choice == 'quiz_3'",
+          "next_step": "quiz_correct"
+        },
+        {
+          "condition": "user_choice == 'quiz_5'",
+          "next_step": "quiz_wrong"
+        }
+      ]
+    },
+    {
+      "id": "quiz_correct",
+      "type": "message",
+      "name": "Quiz Correct",
+      "message": "🎉 ¡Correcto! WhatsApp permite máximo 3 botones por mensaje. ¡Bien hecho!",
+      "next_step": "interactive_demo_menu"
+    },
+    {
+      "id": "quiz_wrong",
+      "type": "message",
+      "name": "Quiz Wrong",
+      "message": "❌ No es correcto. La respuesta correcta es 3 botones. ¡Inténtalo de nuevo!",
+      "next_step": "interactive_demo_menu"
+    },
+    {
+      "id": "form_demo",
+      "type": "message",
+      "name": "Form Demo",
+      "message": "📝 **Demo de Formulario:**\n\nLos formularios en WhatsApp pueden incluir:\n• Campos de texto\n• Selecciones múltiples\n• Validaciones\n• Confirmaciones\n\nEjemplo: Formulario de contacto con nombre, email y mensaje.",
+      "next_step": "interactive_demo_menu"
+    },
+    {
+      "id": "game_demo",
+      "type": "message",
+      "name": "Game Demo",
+      "message": "🎯 **Demo de Mini Juego:**\n\nLos mini juegos pueden incluir:\n• Adivinanzas\n• Trivias\n• Juegos de memoria\n• Desafíos interactivos\n\nEjemplo: Juego de adivinar números con pistas.",
+      "next_step": "interactive_demo_menu"
+    },
+    {
+      "id": "help_response",
+      "type": "message",
+      "name": "Help Response",
+      "message": "❓ **Ayuda y Soporte:**\n\nEste sistema de flujos conversacionales te permite:\n\n• Crear conversaciones interactivas\n• Usar diferentes tipos de mensajes\n• Implementar lógica condicional\n• Manejar estados de conversación\n• Integrar con bases de datos\n\nPara más información, consulta la documentación en `/docs`",
+      "next_step": "main_menu"
+    },
+    {
+      "id": "error_fallback",
+      "type": "message",
+      "name": "Error Fallback Message",
+      "message": "❌ **Error del Sistema**\n\nLo siento, ha ocurrido un error inesperado. Por favor, intenta nuevamente o contacta con soporte.\n\n¿Te gustaría volver al menú principal?",
+      "next_step": "main_menu"
     },
     {
       "id": "end",
       "type": "end",
-      "name": "End",
-      "message": "¡Gracias por contactarnos! 😊"
+      "name": "End Conversation",
+      "message": "¡Gracias por explorar el sistema de flujos conversacionales! Que tengas un excelente día. 😊"
     }
-  ],
-  "metadata": {
-    "version": "1.0",
-    "author": "Template Creator",
-    "last_updated": "2024-10-10",
-    "tags": ["main", "simple", "greeting"],
-    "complexity": "low"
-  }
+  ]
 }

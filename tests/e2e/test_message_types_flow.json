@@ -1,0 +1,196 @@
+{
+  "flow_id": "test_whatsapp_native_types",
+  "name": "Test WhatsApp Native Message Types",
+  "description": "Flow to test all native WhatsApp message types using real API calls",
+  "version": "1.0.0",
+  "steps": [
+    {
+      "id": "welcome",
+      "type": "MESSAGE",
+      "message": "¡Hola! Voy a enviarte diferentes tipos de mensajes nativos de WhatsApp para probar el sistema completo.",
+      "next_step": "text_message"
+    },
+    {
+      "id": "text_message",
+      "type": "MESSAGE",
+      "message": "Este es un mensaje de texto simple usando el tipo 'text' nativo de WhatsApp.",
+      "next_step": "interactive_buttons"
+    },
+    {
+      "id": "interactive_buttons",
+      "type": "MESSAGE",
+      "message": "Ahora un mensaje con botones interactivos nativos:",
+      "message_type": "interactive",
+      "interactive_type": "button",
+      "buttons": [
+        {"id": "option1", "title": "Ver Productos"},
+        {"id": "option2", "title": "Contactar"},
+        {"id": "option3", "title": "Soporte"}
+      ],
+      "next_step": "interactive_list"
+    },
+    {
+      "id": "interactive_list",
+      "type": "MESSAGE",
+      "message": "Ahora una lista interactiva nativa:",
+      "message_type": "interactive",
+      "interactive_type": "list",
+      "button_text": "Ver opciones",
+      "sections": [
+        {
+          "title": "Productos",
+          "rows": [
+            {
+              "id": "product1",
+              "title": "Laptop Gaming",
+              "description": "Laptop de alta gama - $1200"
+            },
+            {
+              "id": "product2",
+              "title": "Mouse Inalámbrico",
+              "description": "Mouse Bluetooth - $25"
+            }
+          ]
+        },
+        {
+          "title": "Servicios",
+          "rows": [
+            {
+              "id": "service1",
+              "title": "Soporte Técnico",
+              "description": "Asistencia 24/7"
+            },
+            {
+              "id": "service2",
+              "title": "Desarrollo Web",
+              "description": "Sitios web personalizados"
+            }
+          ]
+        }
+      ],
+      "next_step": "image_message"
+    },
+    {
+      "id": "image_message",
+      "type": "MESSAGE",
+      "message": "Ahora voy a enviar una imagen real usando el tipo 'image' nativo:",
+      "message_type": "image",
+      "image_url": "https://picsum.photos/400/300",
+      "caption": "Esta es una imagen real enviada usando el tipo 'image' nativo de WhatsApp.",
+      "next_step": "document_message"
+    },
+    {
+      "id": "document_message",
+      "type": "MESSAGE",
+      "message": "Ahora un documento usando el tipo 'document' nativo:",
+      "message_type": "document",
+      "document_url": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+      "filename": "documento_prueba.pdf",
+      "caption": "Este es un documento PDF enviado usando el tipo 'document' nativo.",
+      "next_step": "audio_message"
+    },
+    {
+      "id": "audio_message",
+      "type": "MESSAGE",
+      "message": "Ahora un audio usando el tipo 'audio' nativo:",
+      "message_type": "audio",
+      "audio_url": "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav",
+      "next_step": "video_message"
+    },
+    {
+      "id": "video_message",
+      "type": "MESSAGE",
+      "message": "Ahora un video usando el tipo 'video' nativo:",
+      "message_type": "video",
+      "video_url": "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4",
+      "caption": "Este es un video enviado usando el tipo 'video' nativo de WhatsApp.",
+      "next_step": "location_message"
+    },
+    {
+      "id": "location_message",
+      "type": "MESSAGE",
+      "message": "Ahora una ubicación usando el tipo 'location' nativo:",
+      "message_type": "location",
+      "latitude": -34.6037,
+      "longitude": -58.3816,
+      "name": "Buenos Aires",
+      "address": "Ciudad Autónoma de Buenos Aires, Argentina",
+      "next_step": "contact_message"
+    },
+    {
+      "id": "contact_message",
+      "type": "MESSAGE",
+      "message": "Ahora información de contacto usando el tipo 'contacts' nativo:",
+      "message_type": "contacts",
+      "contacts": [
+        {
+          "name": {
+            "formatted_name": "Juan Pérez",
+            "first_name": "Juan",
+            "last_name": "Pérez"
+          },
+          "phones": [
+            {
+              "phone": "+1234567890",
+              "type": "WORK"
+            }
+          ],
+          "emails": [
+            {
+              "email": "juan@example.com",
+              "type": "WORK"
+            }
+          ]
+        }
+      ],
+      "next_step": "sticker_message"
+    },
+    {
+      "id": "sticker_message",
+      "type": "MESSAGE",
+      "message": "Ahora un sticker usando el tipo 'sticker' nativo:",
+      "message_type": "sticker",
+      "sticker_url": "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f600.png",
+      "next_step": "template_message"
+    },
+    {
+      "id": "template_message",
+      "type": "MESSAGE",
+      "message": "Ahora voy a intentar enviar un mensaje template (esto puede fallar si no tienes templates aprobados):",
+      "message_type": "template",
+      "template_name": "hello_world",
+      "language_code": "es",
+      "components": [],
+      "next_step": "reaction_message"
+    },
+    {
+      "id": "reaction_message",
+      "type": "MESSAGE",
+      "message": "Ahora voy a enviar una reacción a un mensaje anterior:",
+      "message_type": "reaction",
+      "message_id": "wamid.HBgNNTQ5MjYyNTY2MTY5NBUCABEYEkJDQUQxNDYyNjIyQ0UxNTQ2QwA=",
+      "emoji": "👍",
+      "next_step": "catalog_message"
+    },
+    {
+      "id": "catalog_message",
+      "type": "MESSAGE",
+      "message": "Ahora un mensaje de catálogo con producto:",
+      "message_type": "catalog",
+      "catalog_id": "785880617687252",
+      "product_id": "sample_product_001",
+      "next_step": "summary"
+    },
+    {
+      "id": "summary",
+      "type": "MESSAGE",
+      "message": "¡Listo! He enviado todos los tipos de mensajes nativos de WhatsApp que funcionan:\n\n✅ Text (texto simple)\n✅ Interactive Buttons (botones de respuesta)\n✅ Interactive List (lista interactiva)\n✅ Image (imagen real)\n✅ Document (documento real)\n✅ Audio (audio real)\n✅ Video (video real)\n✅ Location (ubicación real)\n✅ Contacts (contacto real)\n✅ Reaction (reacción a mensaje)\n✅ Catalog (mensaje de catálogo)\n⚠️ Sticker (temporalmente desactivado)\n⚠️ Template (requiere aprobación de Meta)\n\n¿Recibiste todos correctamente?",
+      "next_step": "end"
+    },
+    {
+      "id": "end",
+      "type": "END",
+      "message": "Test completado. Revisa qué mensajes llegaron y cuáles fallaron para mejorar el sistema."
+    }
+  ]
+}

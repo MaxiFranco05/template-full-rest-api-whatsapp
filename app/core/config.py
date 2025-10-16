@@ -55,8 +55,14 @@ class Settings(BaseSettings):
     WHATSAPP_WEBHOOK_VERIFY_TOKEN: str = ""
     WHATSAPP_API_URL: str = "https://graph.facebook.com/v18.0"
     
-    # Sistema de mensajes
-    MESSAGES_FILE_PATH: str = "app/data/messages.yaml"
+    # WhatsApp System User (para acceso a catálogos)
+    WHATSAPP_USER_ID: str = ""
+    WHATSAPP_CATALOG_ID: str = ""
+    
+    # Configuración de procesamiento de mensajes
+    MESSAGE_PROCESSING_DELAY_SECONDS: int = 2
+    MESSAGE_CONCATENATION_ENABLED: bool = True
+    MESSAGE_TIME_TOLERANCE_SECONDS: int = 300
     
     # Base de datos (SQLite por defecto, pero configurable)
     DATABASE_TYPE: str = "sqlite"  # sqlite, postgresql, mysql
@@ -64,7 +70,7 @@ class Settings(BaseSettings):
     
     # Información de la empresa (personalizable)
     COMPANY_NAME: str = "Tu Empresa"
-    COMPANY_PHONE: str = "+1234567890"
+    COMPANY_PHONE: str = "{{company_phone}}"
     COMPANY_EMAIL: str = "contacto@tuempresa.com"
     COMPANY_ADDRESS: str = "123 Main Street, City, State"
     COMPANY_WEBSITE: str = "www.tuempresa.com"

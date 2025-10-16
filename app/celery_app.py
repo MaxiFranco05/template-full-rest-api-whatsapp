@@ -36,7 +36,7 @@ def process_whatsapp_message_async(self, message_data: dict):
     Procesar mensaje de WhatsApp de forma asíncrona
     """
     try:
-        from app.services.whatsapp_service import whatsapp_service
+        from app.services.whatsapp.service import whatsapp_service
         
         logger.info(f"Procesando mensaje asíncrono: {message_data.get('message_id')}")
         
@@ -57,7 +57,7 @@ def send_scheduled_message(phone_number: str, message: str, scheduled_time: str)
     Enviar mensaje programado
     """
     try:
-        from app.services.whatsapp_service import whatsapp_service
+        from app.services.whatsapp.service import whatsapp_service
         from datetime import datetime
         
         logger.info(f"Enviando mensaje programado a {phone_number}")
@@ -77,7 +77,7 @@ def cleanup_expired_conversations():
     Limpiar conversaciones expiradas (tarea programada)
     """
     try:
-        from app.services.conversation_service import conversation_manager
+        from app.services.business.conversation import conversation_manager
         
         logger.info("Limpiando conversaciones expiradas")
         

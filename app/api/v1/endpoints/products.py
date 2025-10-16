@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.schemas import Product, ProductCreate, ProductUpdate, PaginatedResponse
-from app.services.product_service import ProductService
+from app.services.business.product import ProductService
 from app.api.v1.endpoints.auth import get_current_user
 from app.schemas import User
 
